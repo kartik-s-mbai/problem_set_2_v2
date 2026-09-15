@@ -3,6 +3,10 @@ export interface ResaleData {
   flatType: string;
   month: string | null;
   medianPrice: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  medianPricePerSqm: number | null;
+  medianRemainingLeaseYears: number | null;
   count: number;
 }
 

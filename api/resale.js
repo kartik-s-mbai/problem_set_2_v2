@@ -1,3 +1,69 @@
+function parseRemainingLease(str) {
+  if (!str || typeof str !== 'string') return null;
+  const yearsMatch = str.match(/(\d+)\s*year/i);
+  const monthsMatch = str.match(/(\d+)\s*month/i);
+  const years = yearsMatch ? parseInt(yearsMatch[1], 10) : 0;
+  const months = monthsMatch ? parseInt(monthsMatch[1], 10) : 0;
+  return years + months / 12;
+}
+
+function computeMetrics(records) {
+  if (!records || records.length === 0) {
+    return {
+      count: 0,
+      medianPrice: null,
+      minPrice: null,
+      maxPrice: null,
+      medianPricePerSqm: null,
+      medianRemainingLeaseYears: null
+    };
+  }
+
+  const count = records.length;
+  const prices = records.map((r) => r.resale_price).sort((a, b) => a - b);
+  const mid = Math.floor(prices.length / 2);
+  const medianPrice = prices.length % 2 !== 0
+    ? prices[mid]
+    : (prices[mid - 1] + prices[mid]) / 2;
+
+  const minPrice = prices[0];
+  const maxPrice = prices[prices.length - 1];
+
+  const psmList = records
+    .map((r) => r.resale_price / Number(r.floor_area_sqm))
+    .filter((v) => !isNaN(v) && isFinite(v))
+    .sort((a, b) => a - b);
+
+  const midPsm = Math.floor(psmList.length / 2);
+  const rawMedianPsm = psmList.length % 2 !== 0
+    ? psmList[midPsm]
+    : (psmList[midPsm - 1] + psmList[midPsm]) / 2;
+  const medianPricePerSqm = Math.round(rawMedianPsm);
+
+  const leaseList = records
+    .map((r) => parseRemainingLease(r.remaining_lease))
+    .filter((v) => v !== null && !isNaN(v))
+    .sort((a, b) => a - b);
+
+  let medianRemainingLeaseYears = null;
+  if (leaseList.length > 0) {
+    const midLease = Math.floor(leaseList.length / 2);
+    const rawMedianLease = leaseList.length % 2 !== 0
+      ? leaseList[midLease]
+      : (leaseList[midLease - 1] + leaseList[midLease]) / 2;
+    medianRemainingLeaseYears = Math.round(rawMedianLease * 10) / 10;
+  }
+
+  return {
+    count,
+    medianPrice,
+    minPrice,
+    maxPrice,
+    medianPricePerSqm,
+    medianRemainingLeaseYears
+  };
+}
+
 export default async function handler(req, res) {
   if (typeof res.status !== 'function') {
     res.status = (code) => {
@@ -88,6 +154,10 @@ export default async function handler(req, res) {
         flatType,
         month: null,
         medianPrice: null,
+        minPrice: null,
+        maxPrice: null,
+        medianPricePerSqm: null,
+        medianRemainingLeaseYears: null,
         count: 0
       });
     }
@@ -157,24 +227,27 @@ export default async function handler(req, res) {
         flatType,
         month: latestMonth,
         medianPrice: null,
+        minPrice: null,
+        maxPrice: null,
+        medianPricePerSqm: null,
+        medianRemainingLeaseYears: null,
         count: 0
       });
     }
 
-    const count = records2.length;
-    const prices = records2.map((r) => r.resale_price).sort((a, b) => a - b);
-    const mid = Math.floor(prices.length / 2);
-    const medianPrice = prices.length % 2 !== 0
-      ? prices[mid]
-      : (prices[mid - 1] + prices[mid]) / 2;
+    const metrics2 = computeMetrics(records2);
 
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
     return res.status(200).json({
       town: 'ALL',
       flatType,
       month: latestMonth,
-      medianPrice,
-      count
+      medianPrice: metrics2.medianPrice,
+      minPrice: metrics2.minPrice,
+      maxPrice: metrics2.maxPrice,
+      medianPricePerSqm: metrics2.medianPricePerSqm,
+      medianRemainingLeaseYears: metrics2.medianRemainingLeaseYears,
+      count: metrics2.count
     });
   }
 
@@ -248,6 +321,10 @@ export default async function handler(req, res) {
       flatType,
       month: null,
       medianPrice: null,
+      minPrice: null,
+      maxPrice: null,
+      medianPricePerSqm: null,
+      medianRemainingLeaseYears: null,
       count: 0
     });
   }
@@ -256,20 +333,18 @@ export default async function handler(req, res) {
   const mostRecentMonth = months[months.length - 1];
 
   const latestRecords = records.filter((r) => r.month === mostRecentMonth);
-  const count = latestRecords.length;
-
-  const prices = latestRecords.map((r) => r.resale_price).sort((a, b) => a - b);
-  const mid = Math.floor(prices.length / 2);
-  const medianPrice = prices.length % 2 !== 0
-    ? prices[mid]
-    : (prices[mid - 1] + prices[mid]) / 2;
+  const metrics = computeMetrics(latestRecords);
 
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
   return res.status(200).json({
     town,
     flatType,
     month: mostRecentMonth,
-    medianPrice,
-    count
+    medianPrice: metrics.medianPrice,
+    minPrice: metrics.minPrice,
+    maxPrice: metrics.maxPrice,
+    medianPricePerSqm: metrics.medianPricePerSqm,
+    medianRemainingLeaseYears: metrics.medianRemainingLeaseYears,
+    count: metrics.count
   });
 }

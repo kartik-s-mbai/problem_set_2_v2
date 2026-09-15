@@ -41,6 +41,10 @@ function formatCurrency(val: number): string {
   }).format(val);
 }
 
+function formatNumber(val: number): string {
+  return new Intl.NumberFormat('en-SG').format(val);
+}
+
 function formatMonth(monthStr: string | null): string {
   if (!monthStr) return '';
   const [year, month] = monthStr.split('-');
@@ -187,6 +191,13 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
                 >
                   {formatCurrency(data.medianPrice)}
                 </p>
+                {data.minPrice !== null && data.minPrice !== undefined && (
+                  <div id={`details-${cardIdPrefix}`} className="mt-2.5 space-y-1 text-xs text-slate-600">
+                    <p id={`range-${cardIdPrefix}`}>Range: S${formatNumber(data.minPrice)} – S${formatNumber(data.maxPrice!)}</p>
+                    <p id={`persqm-${cardIdPrefix}`}>Per sqm: S${formatNumber(data.medianPricePerSqm!)}</p>
+                    <p id={`lease-${cardIdPrefix}`}>Remaining lease: {data.medianRemainingLeaseYears} years (median)</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
