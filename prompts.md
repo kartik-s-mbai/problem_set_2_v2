@@ -152,3 +152,21 @@ some of them are all caps, such as YISHUN. make none of them all caps
 
 ## Change
 I want to make one last change. Remove anything about couples. I want this to be for all first time HDB buyers
+
+## Change
+Two changes.
+
+1) In api/resale.js, for both the named-town path and the ALL path, compute three
+more figures from the same records already fetched for the latest month, and return
+them alongside the existing fields: minPrice and maxPrice (lowest and highest
+resale_price); medianPricePerSqm (median of resale_price divided by
+Number(floor_area_sqm), rounded to the nearest dollar); and medianRemainingLeaseYears
+(parse remaining_lease strings like "61 years 04 months" into years plus months/12,
+take the median, round to one decimal). When count is 0, return all of them as null.
+Change nothing else in the function and do not touch api/health.js.
+
+2) On each of the three cards, under the median price, show three short lines:
+"Range: S$<minPrice> – S$<maxPrice>", "Per sqm: S$<medianPricePerSqm>", and
+"Remaining lease: <medianRemainingLeaseYears> years (median)". Format prices with
+thousands separators. Show these lines only when data is present; the four state
+sentences are unchanged. Change nothing else.
