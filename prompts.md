@@ -149,3 +149,6 @@ not one of the 26; the dataset has no data for it. Change nothing else.
 
 ## Change
 some of them are all caps, such as YISHUN. make none of them all caps
+
+## Change
+I want to make one last change. Remove anything about couples. I want this to be for all first time HDB buyers
