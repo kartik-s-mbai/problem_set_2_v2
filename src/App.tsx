@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Home, Activity, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { Home, Activity, ShieldCheck, Sparkles } from 'lucide-react';
 import type { ResaleData, FetchStatus } from './types';
 
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'] as const;
@@ -267,7 +267,7 @@ export default function App() {
               <Home className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wider font-semibold text-emerald-700">Couple Housing Decision</p>
+              <p className="text-xs uppercase tracking-wider font-semibold text-emerald-700">First-Time Buyer Guide</p>
               <p className="text-sm font-semibold text-slate-900">Singapore HDB Resale Benchmark</p>
             </div>
           </div>
@@ -283,14 +283,14 @@ export default function App() {
         {/* Main Heading with Chosen Town or Singapore */}
         <div id="heading-container" className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-3">
-            <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
-            <span>First-Home Planning for Couples</span>
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>First-Time HDB Buyers</span>
           </div>
           <h1 id="page-heading" className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             {headingText}
           </h1>
           <p id="page-subheading" className="mt-2 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your joint household budget.
+            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget.
             Latest median resale benchmark computed directly from verified data.gov.sg records.
           </p>
         </div>
