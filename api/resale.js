@@ -13,17 +13,174 @@ export default async function handler(req, res) {
   }
 
   const query = req.query || Object.fromEntries(new URL(req.url, 'http://localhost').searchParams.entries());
-  const rawTown = query.town !== undefined && query.town !== null ? String(query.town).trim() : 'TAMPINES';
+  const rawTown = query.town !== undefined && query.town !== null ? String(query.town).trim() : '';
   const rawType = query.type !== undefined && query.type !== null ? String(query.type).trim() : '4 ROOM';
 
-  const townStr = rawTown || 'TAMPINES';
   const typeStr = rawType || '4 ROOM';
-
-  const town = townStr.toUpperCase();
   const flatType = typeStr.toUpperCase();
 
   const allowedPattern = /^[A-Za-z0-9 /]+$/;
-  if (!allowedPattern.test(town) || !allowedPattern.test(flatType)) {
+  if (!allowedPattern.test(flatType)) {
+    return res.status(400).json({
+      error: 'Query parameters town and type allow only letters, digits, spaces, and slashes.'
+    });
+  }
+
+  const isAllSingapore = !rawTown || rawTown.toUpperCase() === 'ALL';
+
+  if (isAllSingapore) {
+    // 1) First call the datastore with filters={"flat_type":<type>}, sort=month desc, limit=1 to learn latest month
+    const step1Params = new URLSearchParams();
+    step1Params.set('resource_id', 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc');
+    step1Params.set('filters', JSON.stringify({ flat_type: flatType }));
+    step1Params.set('sort', 'month desc');
+    step1Params.set('limit', '1');
+
+    const step1Url = `https://data.gov.sg/api/action/datastore_search?${step1Params.toString()}`;
+
+    let resp1;
+    try {
+      resp1 = await fetch(step1Url);
+    } catch (networkErr) {
+      return res.status(504).json({
+        upstreamStatus: null,
+        refusal: false,
+        unreachable: true,
+        error: "We couldn't reach data.gov.sg. Check your connection and try again."
+      });
+    }
+
+    if (!resp1.ok) {
+      return res.status(resp1.status).json({
+        upstreamStatus: resp1.status,
+        refusal: true,
+        unreachable: false,
+        error: `data.gov.sg turned the request away with status ${resp1.status}.`
+      });
+    }
+
+    let data1;
+    try {
+      data1 = await resp1.json();
+    } catch (parseErr) {
+      return res.status(502).json({
+        upstreamStatus: resp1.status,
+        refusal: true,
+        unreachable: false,
+        error: 'data.gov.sg returned an unreadable response body.'
+      });
+    }
+
+    if (!data1 || data1.success === false) {
+      return res.status(502).json({
+        upstreamStatus: resp1.status,
+        refusal: true,
+        unreachable: false,
+        error: data1?.error?.message || 'data.gov.sg datastore query was not successful.'
+      });
+    }
+
+    const records1 = data1.result?.records || [];
+    if (records1.length === 0) {
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+      return res.status(200).json({
+        town: 'ALL',
+        flatType,
+        month: null,
+        medianPrice: null,
+        count: 0
+      });
+    }
+
+    const latestMonth = records1[0].month;
+
+    // 2) Call it again with filters={"month":<that month>,"flat_type":<type>} and limit=10000
+    const step2Params = new URLSearchParams();
+    step2Params.set('resource_id', 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc');
+    step2Params.set('filters', JSON.stringify({ month: latestMonth, flat_type: flatType }));
+    step2Params.set('limit', '10000');
+
+    const step2Url = `https://data.gov.sg/api/action/datastore_search?${step2Params.toString()}`;
+
+    let resp2;
+    try {
+      resp2 = await fetch(step2Url);
+    } catch (networkErr) {
+      return res.status(504).json({
+        upstreamStatus: null,
+        refusal: false,
+        unreachable: true,
+        error: "We couldn't reach data.gov.sg. Check your connection and try again."
+      });
+    }
+
+    if (!resp2.ok) {
+      return res.status(resp2.status).json({
+        upstreamStatus: resp2.status,
+        refusal: true,
+        unreachable: false,
+        error: `data.gov.sg turned the request away with status ${resp2.status}.`
+      });
+    }
+
+    let data2;
+    try {
+      data2 = await resp2.json();
+    } catch (parseErr) {
+      return res.status(502).json({
+        upstreamStatus: resp2.status,
+        refusal: true,
+        unreachable: false,
+        error: 'data.gov.sg returned an unreadable response body.'
+      });
+    }
+
+    if (!data2 || data2.success === false) {
+      return res.status(502).json({
+        upstreamStatus: resp2.status,
+        refusal: true,
+        unreachable: false,
+        error: data2?.error?.message || 'data.gov.sg datastore query was not successful.'
+      });
+    }
+
+    const rawRecords2 = data2.result?.records || [];
+    const records2 = rawRecords2.map((r) => ({
+      ...r,
+      resale_price: Number(r.resale_price)
+    }));
+
+    if (records2.length === 0) {
+      res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+      return res.status(200).json({
+        town: 'ALL',
+        flatType,
+        month: latestMonth,
+        medianPrice: null,
+        count: 0
+      });
+    }
+
+    const count = records2.length;
+    const prices = records2.map((r) => r.resale_price).sort((a, b) => a - b);
+    const mid = Math.floor(prices.length / 2);
+    const medianPrice = prices.length % 2 !== 0
+      ? prices[mid]
+      : (prices[mid - 1] + prices[mid]) / 2;
+
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+    return res.status(200).json({
+      town: 'ALL',
+      flatType,
+      month: latestMonth,
+      medianPrice,
+      count
+    });
+  }
+
+  // Existing path for a named town exactly as it is
+  const town = rawTown.toUpperCase();
+  if (!allowedPattern.test(town)) {
     return res.status(400).json({
       error: 'Query parameters town and type allow only letters, digits, spaces, and slashes.'
     });

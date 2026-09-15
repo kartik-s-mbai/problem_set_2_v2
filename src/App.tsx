@@ -4,6 +4,38 @@ import type { ResaleData, FetchStatus } from './types';
 
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'] as const;
 
+const TOWNS = [
+  'ANG MO KIO',
+  'BEDOK',
+  'BISHAN',
+  'BUGIS',
+  'BUKIT BATOK',
+  'BUKIT MERAH',
+  'BUKIT PANJANG',
+  'BUKIT TIMAH',
+  'CENTRAL AREA',
+  'CHOA CHU KANG',
+  'CLEMENTI',
+  'GEYLANG',
+  'HOUGANG',
+  'JURONG EAST',
+  'JURONG WEST',
+  'KALLANG',
+  'MARINE PARADE',
+  'PASIR RIS',
+  'PUNGGOL',
+  'QUEENSTOWN',
+  'RIVER VALLEY',
+  'SEMBAWANG',
+  'SENGKANG',
+  'SERANGOON',
+  'TAMPINES',
+  'TOA PAYOH',
+  'WHAMPOA',
+  'WOODLANDS',
+  'YISHUN',
+] as const;
+
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('en-SG', {
     style: 'currency',
@@ -33,7 +65,11 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
 
   useEffect(() => {
     const apiParams = new URLSearchParams();
-    apiParams.set('town', town);
+    if (town && town !== 'ALL') {
+      apiParams.set('town', town);
+    } else {
+      apiParams.set('town', 'ALL');
+    }
     apiParams.set('type', flatType);
 
     let isMounted = true;
@@ -172,15 +208,46 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
 }
 
 export default function App() {
-  const [townQuery, setTownQuery] = useState('TAMPINES');
+  const [selectedTown, setSelectedTown] = useState<string>('ALL');
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const rawTown = searchParams.get('town') || 'TAMPINES';
-    setTownQuery(rawTown.trim());
+    const rawTown = searchParams.get('town');
+    if (rawTown && rawTown.trim().toUpperCase() !== 'ALL') {
+      setSelectedTown(rawTown.trim().toUpperCase());
+    } else {
+      setSelectedTown('ALL');
+    }
+
+    const handlePopState = () => {
+      const currentParams = new URLSearchParams(window.location.search);
+      const t = currentParams.get('town');
+      if (t && t.trim().toUpperCase() !== 'ALL') {
+        setSelectedTown(t.trim().toUpperCase());
+      } else {
+        setSelectedTown('ALL');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const townDisplay = (townQuery || 'TAMPINES').toUpperCase();
+  const handleSelectTown = (newTown: string) => {
+    setSelectedTown(newTown);
+    const url = new URL(window.location.href);
+    if (!newTown || newTown === 'ALL') {
+      url.searchParams.delete('town');
+    } else {
+      url.searchParams.set('town', newTown);
+    }
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const isAllSingapore = !selectedTown || selectedTown === 'ALL';
+  const headingText = isAllSingapore
+    ? 'Singapore HDB Resale Prices'
+    : `${selectedTown} HDB Resale Prices`;
 
   return (
     <div id="app-root" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between">
@@ -205,25 +272,52 @@ export default function App() {
 
       {/* Main Content Area */}
       <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">
-        {/* Main Heading with Town */}
+        {/* Main Heading with Chosen Town or Singapore */}
         <div id="heading-container" className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-3">
             <HeartHandshake className="w-3.5 h-3.5 text-emerald-600" />
             <span>First-Home Planning for Couples</span>
           </div>
           <h1 id="page-heading" className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            {townDisplay} HDB Resale Prices
+            {headingText}
           </h1>
           <p id="page-subheading" className="mt-2 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Evaluating whether a flat in {townDisplay} fits your joint household budget.
+            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : selectedTown} fits your joint household budget.
             Latest median resale benchmark computed directly from verified data.gov.sg records.
           </p>
+        </div>
+
+        {/* Town Dropdown Selector Above the Three Cards */}
+        <div id="town-selector-container" className="mb-6 max-w-xs">
+          <label htmlFor="town-select" className="text-sm font-semibold text-slate-700 block mb-1.5">
+            Town
+          </label>
+          <div className="relative">
+            <select
+              id="town-select"
+              value={selectedTown}
+              onChange={(e) => handleSelectTown(e.target.value)}
+              className="w-full appearance-none bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-10 cursor-pointer"
+            >
+              <option value="ALL">All of Singapore</option>
+              {TOWNS.map((town) => (
+                <option key={town} value={town}>
+                  {town}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* Three Cards Side by Side (3 ROOM, 4 ROOM, 5 ROOM), stacking vertically on phone */}
         <div id="cards-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {FLAT_TYPES.map((flatType) => (
-            <FlatTypeCard key={flatType} town={townDisplay} flatType={flatType} />
+            <FlatTypeCard key={`${selectedTown}-${flatType}`} town={selectedTown} flatType={flatType} />
           ))}
         </div>
       </main>
