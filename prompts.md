@@ -120,6 +120,27 @@ stack vertically.
 Do not change api/resale.js or api/health.js.
 
 ## Change
+Two changes.
+
+1) In api/resale.js, when ?town= is missing or equals ALL, compute the figure for
+all of Singapore without paging: first call the datastore with
+filters={"flat_type":<type>}, sort=month desc, limit=1 to learn the latest month;
+then call it again with filters={"month":<that month>,"flat_type":<type>} and
+limit=10000, and compute the median and count from that. Return town: "ALL".
+Leave the existing path for a named town exactly as it is.
+
+2) On the screen, default to all of Singapore, with the heading "Singapore HDB
+Resale Prices". Add a dropdown above the three cards labelled "Town", with "All of
+Singapore" first and then these 26 towns in this order: ANG MO KIO, BEDOK, BISHAN,
+BUKIT BATOK, BUKIT MERAH, BUKIT PANJANG, BUKIT TIMAH, CENTRAL AREA, CHOA CHU KANG,
+CLEMENTI, GEYLANG, HOUGANG, JURONG EAST, JURONG WEST, KALLANG/WHAMPOA, MARINE PARADE,
+PASIR RIS, PUNGGOL, QUEENSTOWN, SEMBAWANG, SENGKANG, SERANGOON, TAMPINES, TOA PAYOH,
+WOODLANDS, YISHUN. Choosing a town updates ?town= in the page URL and reloads the
+three cards; opening a URL with ?town= already set selects that town in the dropdown.
+The heading shows the chosen town. Change nothing else, and do not touch
+api/health.js.
+
+## Change
 In the Town dropdown, keep the 26 dataset town values as the values sent to
 api/resale, but change three display labels: show CENTRAL AREA as "Central Area
 (Bugis, River Valley, Chinatown)", KALLANG/WHAMPOA as "Kallang / Whampoa", and
