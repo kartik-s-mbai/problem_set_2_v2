@@ -4,37 +4,34 @@ import type { ResaleData, FetchStatus } from './types';
 
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'] as const;
 
-const TOWNS = [
-  'ANG MO KIO',
-  'BEDOK',
-  'BISHAN',
-  'BUGIS',
-  'BUKIT BATOK',
-  'BUKIT MERAH',
-  'BUKIT PANJANG',
-  'BUKIT TIMAH',
-  'CENTRAL AREA',
-  'CHOA CHU KANG',
-  'CLEMENTI',
-  'GEYLANG',
-  'HOUGANG',
-  'JURONG EAST',
-  'JURONG WEST',
-  'KALLANG',
-  'MARINE PARADE',
-  'PASIR RIS',
-  'PUNGGOL',
-  'QUEENSTOWN',
-  'RIVER VALLEY',
-  'SEMBAWANG',
-  'SENGKANG',
-  'SERANGOON',
-  'TAMPINES',
-  'TOA PAYOH',
-  'WHAMPOA',
-  'WOODLANDS',
-  'YISHUN',
-] as const;
+const TOWNS: { value: string; label: string }[] = [
+  { value: 'ANG MO KIO', label: 'Ang Mo Kio' },
+  { value: 'BEDOK', label: 'Bedok' },
+  { value: 'BISHAN', label: 'Bishan' },
+  { value: 'BUKIT BATOK', label: 'Bukit Batok' },
+  { value: 'BUKIT MERAH', label: 'Bukit Merah (Tiong Bahru, Redhill)' },
+  { value: 'BUKIT PANJANG', label: 'Bukit Panjang' },
+  { value: 'BUKIT TIMAH', label: 'Bukit Timah' },
+  { value: 'CENTRAL AREA', label: 'Central Area (Bugis, River Valley, Chinatown)' },
+  { value: 'CHOA CHU KANG', label: 'Choa Chu Kang' },
+  { value: 'CLEMENTI', label: 'Clementi' },
+  { value: 'GEYLANG', label: 'Geylang' },
+  { value: 'HOUGANG', label: 'Hougang' },
+  { value: 'JURONG EAST', label: 'Jurong East' },
+  { value: 'JURONG WEST', label: 'Jurong West' },
+  { value: 'KALLANG/WHAMPOA', label: 'Kallang / Whampoa' },
+  { value: 'MARINE PARADE', label: 'Marine Parade' },
+  { value: 'PASIR RIS', label: 'Pasir Ris' },
+  { value: 'PUNGGOL', label: 'Punggol' },
+  { value: 'QUEENSTOWN', label: 'Queenstown' },
+  { value: 'SEMBAWANG', label: 'Sembawang' },
+  { value: 'SENGKANG', label: 'Sengkang' },
+  { value: 'SERANGOON', label: 'Serangoon' },
+  { value: 'TAMPINES', label: 'Tampines' },
+  { value: 'TOA PAYOH', label: 'Toa Payoh' },
+  { value: 'WOODLANDS', label: 'Woodlands' },
+  { value: 'YISHUN', label: 'Yishun' },
+];
 
 function formatCurrency(val: number): string {
   return new Intl.NumberFormat('en-SG', {
@@ -245,9 +242,20 @@ export default function App() {
   };
 
   const isAllSingapore = !selectedTown || selectedTown === 'ALL';
+  const selectedTownObj = TOWNS.find((t) => t.value.toUpperCase() === (selectedTown || '').toUpperCase());
+  const chosenTownDisplay = selectedTownObj
+    ? selectedTownObj.label
+    : (selectedTown
+        ? selectedTown
+            .toLowerCase()
+            .split(' ')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ')
+        : 'Singapore');
+
   const headingText = isAllSingapore
     ? 'Singapore HDB Resale Prices'
-    : `${selectedTown} HDB Resale Prices`;
+    : `${chosenTownDisplay} HDB Resale Prices`;
 
   return (
     <div id="app-root" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between">
@@ -282,7 +290,7 @@ export default function App() {
             {headingText}
           </h1>
           <p id="page-subheading" className="mt-2 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : selectedTown} fits your joint household budget.
+            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your joint household budget.
             Latest median resale benchmark computed directly from verified data.gov.sg records.
           </p>
         </div>
@@ -301,8 +309,8 @@ export default function App() {
             >
               <option value="ALL">All of Singapore</option>
               {TOWNS.map((town) => (
-                <option key={town} value={town}>
-                  {town}
+                <option key={town.value} value={town.value}>
+                  {town.label}
                 </option>
               ))}
             </select>
