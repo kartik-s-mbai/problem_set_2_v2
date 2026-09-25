@@ -15,6 +15,8 @@ function computeMetrics(records) {
       minPrice: null,
       maxPrice: null,
       medianPricePerSqm: null,
+      medianPricePerSqft: null,
+      medianPricePerSqFt: null,
       medianRemainingLeaseYears: null
     };
   }
@@ -39,6 +41,7 @@ function computeMetrics(records) {
     ? psmList[midPsm]
     : (psmList[midPsm - 1] + psmList[midPsm]) / 2;
   const medianPricePerSqm = Math.round(rawMedianPsm);
+  const medianPricePerSqft = Math.round(rawMedianPsm / 10.7639);
 
   const leaseList = records
     .map((r) => parseRemainingLease(r.remaining_lease))
@@ -60,6 +63,8 @@ function computeMetrics(records) {
     minPrice,
     maxPrice,
     medianPricePerSqm,
+    medianPricePerSqft,
+    medianPricePerSqFt: medianPricePerSqft,
     medianRemainingLeaseYears
   };
 }
@@ -157,6 +162,8 @@ export default async function handler(req, res) {
         minPrice: null,
         maxPrice: null,
         medianPricePerSqm: null,
+        medianPricePerSqft: null,
+        medianPricePerSqFt: null,
         medianRemainingLeaseYears: null,
         count: 0
       });
@@ -230,6 +237,8 @@ export default async function handler(req, res) {
         minPrice: null,
         maxPrice: null,
         medianPricePerSqm: null,
+        medianPricePerSqft: null,
+        medianPricePerSqFt: null,
         medianRemainingLeaseYears: null,
         count: 0
       });
@@ -246,6 +255,8 @@ export default async function handler(req, res) {
       minPrice: metrics2.minPrice,
       maxPrice: metrics2.maxPrice,
       medianPricePerSqm: metrics2.medianPricePerSqm,
+      medianPricePerSqft: metrics2.medianPricePerSqft,
+      medianPricePerSqFt: metrics2.medianPricePerSqFt,
       medianRemainingLeaseYears: metrics2.medianRemainingLeaseYears,
       count: metrics2.count
     });
@@ -324,6 +335,8 @@ export default async function handler(req, res) {
       minPrice: null,
       maxPrice: null,
       medianPricePerSqm: null,
+      medianPricePerSqft: null,
+      medianPricePerSqFt: null,
       medianRemainingLeaseYears: null,
       count: 0
     });
@@ -344,6 +357,8 @@ export default async function handler(req, res) {
     minPrice: metrics.minPrice,
     maxPrice: metrics.maxPrice,
     medianPricePerSqm: metrics.medianPricePerSqm,
+    medianPricePerSqft: metrics.medianPricePerSqft,
+    medianPricePerSqFt: metrics.medianPricePerSqFt,
     medianRemainingLeaseYears: metrics.medianRemainingLeaseYears,
     count: metrics.count
   });
