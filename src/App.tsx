@@ -585,7 +585,7 @@ export default function App() {
 
       {/* Footer with exact required licence credit and link */}
       <footer id="app-footer" className="bg-white border-t border-slate-200 py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-xs text-slate-500 leading-relaxed text-center sm:text-left">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-xs text-slate-500 leading-relaxed text-center sm:text-left space-y-3">
           <p id="licence-credit">
             Contains information from Resale flat prices based on registration date from Jan-2017 onwards accessed from data.gov.sg which is made available under the terms of the{' '}
             <a
@@ -598,6 +598,63 @@ export default function App() {
               Singapore Open Data Licence version 1.0
             </a>
             .
+          </p>
+          <p id="privacy-notice">
+            This page uses Microsoft Clarity and Disqus, which use cookies to record how visitors use the site and to host comments. By using this page you agree that we and Microsoft may collect and use this data. See the{' '}
+            <a
+              href="https://www.microsoft.com/privacy/privacystatement"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              Microsoft Privacy Statement
+            </a>{' '}
+            (
+            <a
+              href="https://www.microsoft.com/privacy/privacystatement"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              https://www.microsoft.com/privacy/privacystatement
+            </a>
+            ), the{' '}
+            <a
+              href="https://disqus.com/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              Disqus privacy policy
+            </a>{' '}
+            (
+            <a
+              href="https://disqus.com/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              https://disqus.com/privacy-policy/
+            </a>
+            ) and the{' '}
+            <a
+              href="https://disqus.com/data-sharing-settings/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              Disqus data sharing settings
+            </a>{' '}
+            (
+            <a
+              href="https://disqus.com/data-sharing-settings/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 underline hover:text-emerald-900 transition-colors"
+            >
+              https://disqus.com/data-sharing-settings/
+            </a>
+            ).
           </p>
         </div>
       </footer>
