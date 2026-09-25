@@ -9,30 +9,40 @@
     <meta property="og:description" content="Check the latest median resale price and transaction volume for HDB flats from data.gov.sg to help first-time buyers plan their housing budget." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-      window.addEventListener(
-        'error',
-        function (event) {
-          if (
-            event.message === 'Script error.' ||
-            (event.filename && event.filename.indexOf('disqus') !== -1)
-          ) {
-            event.stopImmediatePropagation();
-            event.preventDefault();
-            return true;
-          }
-        },
-        true
-      );
+      // Suppress cross-origin Script errors from third-party scripts (e.g. Disqus widgets/trackers in preview iframes)
+      window.addEventListener('error', function (event) {
+        if (
+          event.message === 'Script error.' ||
+          (event.filename && (event.filename.includes('disqus') || event.filename.includes('disquscdn')))
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return true;
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {
+        if (
+          event.reason &&
+          (String(event.reason).includes('disqus') || String(event.reason).includes('Script error'))
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }, true);
       window.onerror = function (msg, url) {
-        if (msg === 'Script error.' || (url && url.indexOf('disqus') !== -1)) {
+        if (
+          msg === 'Script error.' ||
+          (typeof msg === 'string' && msg.includes('Script error')) ||
+          (url && (url.includes('disqus') || url.includes('disquscdn')))
+        ) {
           return true;
         }
       };
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>

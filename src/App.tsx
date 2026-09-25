@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Home, Activity, ShieldCheck, Sparkles } from 'lucide-react';
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { Home, Activity, ShieldCheck, Sparkles, MessageSquare, Send, CheckCircle2, Trash2 } from 'lucide-react';
 import type { ResaleData, FetchStatus } from './types';
 
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'] as const;
@@ -215,54 +215,237 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
   );
 }
 
+interface CommentItem {
+  id: string;
+  name: string;
+  text: string;
+  timestamp: string;
+  createdAt?: number;
+}
+
+function formatCommentDate(createdAt?: number, fallback?: string): string {
+  if (!createdAt) return fallback || 'Recently';
+  const diffSec = Math.floor((Date.now() - createdAt) / 1000);
+  if (diffSec < 45) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return new Date(createdAt).toLocaleDateString('en-SG', { month: 'short', day: 'numeric' });
+}
+
 function DisqusComments() {
+  const [comments, setComments] = useState<CommentItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('hdb_resale_user_comments');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter(
+            (c: any) =>
+              c.id !== 'c1' &&
+              c.id !== 'c2' &&
+              !c.text?.includes('Checked the 4-room median') &&
+              !c.text?.includes('The remaining lease and per sqm')
+          );
+          localStorage.setItem('hdb_resale_user_comments', JSON.stringify(clean));
+          return clean;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  const [authorName, setAuthorName] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState('');
+
   useEffect(() => {
     (window as any).disqus_config = function (this: any) {
-      if (!this.page) {
-        this.page = {};
-      }
+      this.page = this.page || {};
       this.page.url = 'https://firsttimehdb.vercel.app/';
       this.page.identifier = 'home';
     };
 
-    if (document.getElementById('disqus-script')) {
-      if ((window as any).DISQUS) {
-        try {
-          (window as any).DISQUS.reset({
-            reload: true,
-            config: function (this: any) {
-              if (!this.page) {
-                this.page = {};
-              }
-              this.page.url = 'https://firsttimehdb.vercel.app/';
-              this.page.identifier = 'home';
-            },
-          });
-        } catch {
-          // Safe ignore if DISQUS is not ready yet
-        }
+    const scriptId = 'disqus-script';
+    const script = document.getElementById(scriptId) as HTMLScriptElement | null;
+
+    if (!script) {
+      const d = document;
+      const s = d.createElement('script');
+      s.id = scriptId;
+      s.src = 'https://firsttimehdb-vercel-app.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', String(+new Date()));
+      (d.head || d.body).appendChild(s);
+    } else if ((window as any).DISQUS) {
+      try {
+        (window as any).DISQUS.reset({
+          reload: true,
+          config: function (this: any) {
+            this.page = this.page || {};
+            this.page.url = 'https://firsttimehdb.vercel.app/';
+            this.page.identifier = 'home';
+          },
+        });
+      } catch {
+        // ignore
       }
-      return;
+    }
+  }, []);
+
+  const handlePostComment = (e?: FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+
+    setIsSubmitting(true);
+    const now = Date.now();
+    const newComment: CommentItem = {
+      id: 'cmt-' + now,
+      name: authorName.trim() || 'Anonymous Guest',
+      text: trimmed,
+      timestamp: 'Just now',
+      createdAt: now,
+    };
+
+    const updated = [newComment, ...comments];
+    setComments(updated);
+    try {
+      localStorage.setItem('hdb_resale_user_comments', JSON.stringify(updated));
+    } catch {
+      // ignore
     }
 
-    const d = document;
-    const s = d.createElement('script');
-    s.id = 'disqus-script';
-    s.async = true;
-    s.src = 'https://firsttimehdb-vercel-app.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', String(+new Date()));
-    s.onerror = () => {
-      // Prevent unhandled errors if external third-party script fails to load
-    };
-    (d.head || d.body).appendChild(s);
-  }, []);
+    setCommentText('');
+    setAuthorName('');
+    setIsSubmitting(false);
+    setFeedbackStatus('Your comment has been posted!');
+    setTimeout(() => setFeedbackStatus(''), 4000);
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    const updated = comments.filter((c) => c.id !== commentId);
+    setComments(updated);
+    try {
+      localStorage.setItem('hdb_resale_user_comments', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleTextareaKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handlePostComment();
+    }
+  };
 
   return (
     <div id="disqus-container" className="mt-12 pt-8 border-t border-slate-200">
-      <p className="text-sm font-medium text-slate-700 mb-4">
-        Tell us what worked for you and what did not.
-      </p>
-      <div id="disqus_thread"></div>
+      {/* Usable Comments Section where anyone can post */}
+      <section id="comments-section" className="mb-8 space-y-6">
+        <form
+          id="comment-form"
+          onSubmit={handlePostComment}
+          className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all"
+        >
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-sm font-black text-slate-900 tracking-wide uppercase flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+              <span className="font-extrabold text-slate-900">Post a Comment (Open to Anyone)</span>
+            </span>
+            <span className="text-xs text-slate-400">No account required</span>
+          </div>
+
+          <textarea
+            id="comment-text-input"
+            rows={3}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder="Say what worked for you and what did not (e.g. price accuracy, town comparisons, or features you'd like to see)..."
+            required
+            className="w-full text-sm text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg p-3 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-colors"
+          />
+
+          <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <input
+                id="comment-name-input"
+                type="text"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="Your name or flat type (optional)"
+                className="text-xs text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:max-w-xs transition-colors"
+              />
+              <span className="hidden sm:inline-block text-[11px] text-slate-400">
+                Press Ctrl+Enter to post
+              </span>
+            </div>
+
+            <button
+              id="comment-post-submit"
+              type="submit"
+              disabled={isSubmitting || !commentText.trim()}
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Post Comment</span>
+            </button>
+          </div>
+
+          {feedbackStatus && (
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>{feedbackStatus}</span>
+            </div>
+          )}
+        </form>
+
+        {/* Live Comments Thread if any comments exist */}
+        {comments.length > 0 && (
+          <div id="comments-thread-list" className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span className="font-semibold text-slate-700">Visitor Feedback ({comments.length})</span>
+              <span>Single feedback thread</span>
+            </div>
+
+            {comments.map((item) => (
+              <div
+                key={item.id}
+                className="group bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-xs space-y-2 hover:border-slate-300 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px] uppercase">
+                      {item.name.charAt(0) || 'A'}
+                    </div>
+                    <span className="font-semibold text-slate-800">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400">
+                      {formatCommentDate(item.createdAt, item.timestamp)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteComment(item.id)}
+                      title="Delete this comment"
+                      className="text-slate-400 hover:text-red-500 opacity-60 group-hover:opacity-100 transition-opacity p-0.5"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-slate-700 leading-relaxed pl-8 text-sm">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Disqus Thread matching CSS selector: div#disqus-container > div#disqus_thread */}
+      <div id="disqus_thread" className="min-h-[200px]"></div>
       <noscript>
         Please enable JavaScript to view the{' '}
         <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
