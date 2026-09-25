@@ -170,3 +170,24 @@ Change nothing else in the function and do not touch api/health.js.
 "Remaining lease: <medianRemainingLeaseYears> years (median)". Format prices with
 thousands separators. Show these lines only when data is present; the four state
 sentences are unchanged. Change nothing else.
+
+## Change
+ROLE: You are a front-end developer working in my existing project. Add to it; do not
+rewrite what is already there.
+
+GOAL: Add a Disqus comment section to the bottom of my main page only, so that visitors
+can leave feedback on the product in a single thread.
+
+CONTEXT:
+- My Disqus shortname is: firsttimehdb-vercel-app
+- My live address is: https://firsttimehdb.vercel.app/
+
+OUTPUT: A small component on the main page that loads the Disqus Universal Code once, with
+page.url set to my full live address (https, and no query string) and page.identifier set
+to the fixed string "home". Put one short line above it inviting visitors to say what
+worked for them and what did not.
+
+GUARDRAILS: Load the Disqus script only once, even when the component re-renders. Mount it
+on the main page only, so that every comment lands in one thread. Do not change anything
+else on the page, and add no npm package without telling me why one is needed.
+

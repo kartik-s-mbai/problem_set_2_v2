@@ -12,6 +12,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      window.addEventListener(
+        'error',
+        function (event) {
+          if (
+            event.message === 'Script error.' ||
+            (event.filename && event.filename.indexOf('disqus') !== -1)
+          ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+            return true;
+          }
+        },
+        true
+      );
+      window.onerror = function (msg, url) {
+        if (msg === 'Script error.' || (url && url.indexOf('disqus') !== -1)) {
+          return true;
+        }
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

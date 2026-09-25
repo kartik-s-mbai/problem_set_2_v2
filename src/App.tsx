@@ -215,6 +215,62 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
   );
 }
 
+function DisqusComments() {
+  useEffect(() => {
+    (window as any).disqus_config = function (this: any) {
+      if (!this.page) {
+        this.page = {};
+      }
+      this.page.url = 'https://firsttimehdb.vercel.app/';
+      this.page.identifier = 'home';
+    };
+
+    if (document.getElementById('disqus-script')) {
+      if ((window as any).DISQUS) {
+        try {
+          (window as any).DISQUS.reset({
+            reload: true,
+            config: function (this: any) {
+              if (!this.page) {
+                this.page = {};
+              }
+              this.page.url = 'https://firsttimehdb.vercel.app/';
+              this.page.identifier = 'home';
+            },
+          });
+        } catch {
+          // Safe ignore if DISQUS is not ready yet
+        }
+      }
+      return;
+    }
+
+    const d = document;
+    const s = d.createElement('script');
+    s.id = 'disqus-script';
+    s.async = true;
+    s.src = 'https://firsttimehdb-vercel-app.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', String(+new Date()));
+    s.onerror = () => {
+      // Prevent unhandled errors if external third-party script fails to load
+    };
+    (d.head || d.body).appendChild(s);
+  }, []);
+
+  return (
+    <div id="disqus-container" className="mt-12 pt-8 border-t border-slate-200">
+      <p className="text-sm font-medium text-slate-700 mb-4">
+        Tell us what worked for you and what did not.
+      </p>
+      <div id="disqus_thread"></div>
+      <noscript>
+        Please enable JavaScript to view the{' '}
+        <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+      </noscript>
+    </div>
+  );
+}
+
 export default function App() {
   const [selectedTown, setSelectedTown] = useState<string>('ALL');
 
@@ -339,6 +395,9 @@ export default function App() {
             <FlatTypeCard key={`${selectedTown}-${flatType}`} town={selectedTown} flatType={flatType} />
           ))}
         </div>
+
+        {/* Disqus Comment Section */}
+        <DisqusComments />
       </main>
 
       {/* Footer with exact required licence credit and link */}
