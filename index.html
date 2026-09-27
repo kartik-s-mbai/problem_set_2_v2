@@ -3,6 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Suppress cross-origin third-party script errors (e.g. Disqus / tracking in preview iframes)
+      (function () {
+        function shouldSuppress(msg, url, filename) {
+          var m = String(msg || '');
+          var u = String(url || filename || '');
+          return (
+            m === 'Script error.' ||
+            m.indexOf('Script error') !== -1 ||
+            u.indexOf('disqus') !== -1 ||
+            u.indexOf('disquscdn') !== -1 ||
+            u.indexOf('clarity') !== -1 ||
+            (!u && (!m || m === 'Script error.'))
+          );
+        }
+
+        function errorHandler(event) {
+          if (!event) return;
+          var msg = event.message || (event.error && event.error.message) || '';
+          var file = event.filename || '';
+          if (shouldSuppress(msg, file, file)) {
+            if (typeof event.preventDefault === 'function') event.preventDefault();
+            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+            return true;
+          }
+        }
+
+        window.addEventListener('error', errorHandler, true);
+        window.addEventListener('error', errorHandler, false);
+
+        window.addEventListener('unhandledrejection', function (event) {
+          if (!event) return;
+          var reason = String(event.reason || (event.reason && event.reason.message) || '');
+          if (
+            reason.indexOf('disqus') !== -1 ||
+            reason.indexOf('disquscdn') !== -1 ||
+            reason.indexOf('clarity') !== -1 ||
+            reason.indexOf('Script error') !== -1
+          ) {
+            if (typeof event.preventDefault === 'function') event.preventDefault();
+            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+          }
+        }, true);
+
+        var prevOnError = window.onerror;
+        window.onerror = function (msg, url, lineNo, colNo, error) {
+          if (shouldSuppress(msg, url, '')) {
+            return true;
+          }
+          if (typeof prevOnError === 'function') {
+            return prevOnError.apply(this, arguments);
+          }
+          return false;
+        };
+      })();
+    </script>
     <title>HDB Resale Budget Checker</title>
     <meta name="description" content="Check the latest median resale price and transaction volume for HDB flats from data.gov.sg to help first-time buyers plan their housing budget." />
     <meta property="og:title" content="HDB Resale Budget Checker" />
@@ -23,35 +79,6 @@
         this.page = this.page || {};
         this.page.url = 'https://firsttimehdb.vercel.app/';
         this.page.identifier = 'home';
-      };
-    </script>
-    <script>
-      // Suppress cross-origin Script errors from third-party scripts (e.g. Disqus widgets/trackers in preview iframes)
-      window.addEventListener('error', function (event) {
-        if (
-          event.message === 'Script error.' ||
-          (event.filename && (event.filename.includes('disqus') || event.filename.includes('disquscdn')))
-        ) {
-          event.preventDefault();
-          return true;
-        }
-      });
-      window.addEventListener('unhandledrejection', function (event) {
-        if (
-          event.reason &&
-          (String(event.reason).includes('disqus') || String(event.reason).includes('Script error'))
-        ) {
-          event.preventDefault();
-        }
-      });
-      window.onerror = function (msg, url) {
-        if (
-          msg === 'Script error.' ||
-          (typeof msg === 'string' && msg.includes('Script error')) ||
-          (url && (url.includes('disqus') || url.includes('disquscdn')))
-        ) {
-          return true;
-        }
       };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">

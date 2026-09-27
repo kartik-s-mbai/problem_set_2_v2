@@ -303,7 +303,12 @@ function DisqusComments() {
       const s = d.createElement('script');
       s.id = scriptId;
       s.src = 'https://firsttimehdb-vercel-app.disqus.com/embed.js';
+      s.async = true;
       s.setAttribute('data-timestamp', String(+new Date()));
+      s.onerror = (e: any) => {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      };
       (d.head || d.body).appendChild(s);
     } else if ((window as any).DISQUS) {
       try {
