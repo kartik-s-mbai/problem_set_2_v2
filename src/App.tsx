@@ -194,7 +194,9 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
                 {data.minPrice !== null && data.minPrice !== undefined && (
                   <div id={`details-${cardIdPrefix}`} className="mt-2.5 space-y-1 text-xs text-slate-600">
                     <p id={`range-${cardIdPrefix}`}>Range: S${formatNumber(data.minPrice)} – S${formatNumber(data.maxPrice!)}</p>
-                    <p id={`persqm-${cardIdPrefix}`}>Per sqm: S${formatNumber(data.medianPricePerSqm!)}</p>
+                    <p id={`persqft-${cardIdPrefix}`}>
+                      Per sq ft: S${formatNumber(data.medianPricePerSqft ?? (data.medianPricePerSqm ? Math.round(data.medianPricePerSqm / 10.7639) : 0))}
+                    </p>
                     <p id={`lease-${cardIdPrefix}`}>Remaining lease: {data.medianRemainingLeaseYears} years (median)</p>
                   </div>
                 )}
@@ -261,6 +263,31 @@ function DisqusComments() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState('');
 
+  // Sync comments with server on mount
+  useEffect(() => {
+    fetch('/api/comments')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.comments)) {
+          setComments((prev) => {
+            const map = new Map<string, CommentItem>();
+            data.comments.forEach((c: CommentItem) => map.set(c.id, c));
+            prev.forEach((c: CommentItem) => map.set(c.id, c));
+            const merged = Array.from(map.values()).sort(
+              (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
+            );
+            try {
+              localStorage.setItem('hdb_resale_user_comments', JSON.stringify(merged));
+            } catch {
+              // ignore
+            }
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     (window as any).disqus_config = function (this: any) {
       this.page = this.page || {};
@@ -317,6 +344,13 @@ function DisqusComments() {
       // ignore
     }
 
+    // Persist to server
+    fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newComment),
+    }).catch(() => {});
+
     setCommentText('');
     setAuthorName('');
     setIsSubmitting(false);
@@ -332,6 +366,7 @@ function DisqusComments() {
     } catch {
       // ignore
     }
+    fetch(`/api/comments?id=${encodeURIComponent(commentId)}`, { method: 'DELETE' }).catch(() => {});
   };
 
   const handleTextareaKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {

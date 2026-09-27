@@ -6,6 +6,8 @@ export interface ResaleData {
   minPrice: number | null;
   maxPrice: number | null;
   medianPricePerSqm: number | null;
+  medianPricePerSqft?: number | null;
+  medianPricePerSqFt?: number | null;
   medianRemainingLeaseYears: number | null;
   count: number;
 }

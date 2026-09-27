@@ -56,6 +56,27 @@ export default defineConfig(() => {
               }
               return;
             }
+            if (parsed.pathname === '/api/comments') {
+              try {
+                const { default: commentsHandler } = await import('./api/comments.js');
+                const query = Object.fromEntries(parsed.searchParams.entries());
+                const fakeReq = Object.assign(req, { query });
+                const fakeRes = Object.assign(res, {
+                  status(code: number) {
+                    res.statusCode = code;
+                    return fakeRes;
+                  },
+                  json(data: unknown) {
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify(data));
+                  },
+                });
+                await commentsHandler(fakeReq, fakeRes);
+              } catch (e) {
+                next(e);
+              }
+              return;
+            }
             next();
           });
         },
