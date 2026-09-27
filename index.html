@@ -4,58 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      // Suppress cross-origin third-party script errors (e.g. Disqus / tracking in preview iframes)
       (function () {
-        function shouldSuppress(msg, url, filename) {
-          var m = String(msg || '');
-          var u = String(url || filename || '');
-          return (
-            m === 'Script error.' ||
-            m.indexOf('Script error') !== -1 ||
-            u.indexOf('disqus') !== -1 ||
-            u.indexOf('disquscdn') !== -1 ||
-            u.indexOf('clarity') !== -1 ||
-            (!u && (!m || m === 'Script error.'))
-          );
+        function isScriptError(event) {
+          if (!event) return false;
+          var msg = String(event.message || (event.error && event.error.message) || '');
+          return msg === 'Script error.' || msg.indexOf('Script error') !== -1;
         }
-
-        function errorHandler(event) {
-          if (!event) return;
-          var msg = event.message || (event.error && event.error.message) || '';
-          var file = event.filename || '';
-          if (shouldSuppress(msg, file, file)) {
-            if (typeof event.preventDefault === 'function') event.preventDefault();
-            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-            return true;
-          }
-        }
-
-        window.addEventListener('error', errorHandler, true);
-        window.addEventListener('error', errorHandler, false);
-
-        window.addEventListener('unhandledrejection', function (event) {
-          if (!event) return;
-          var reason = String(event.reason || (event.reason && event.reason.message) || '');
-          if (
-            reason.indexOf('disqus') !== -1 ||
-            reason.indexOf('disquscdn') !== -1 ||
-            reason.indexOf('clarity') !== -1 ||
-            reason.indexOf('Script error') !== -1
-          ) {
-            if (typeof event.preventDefault === 'function') event.preventDefault();
-            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        window.addEventListener('error', function (e) {
+          if (isScriptError(e)) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
           }
         }, true);
-
-        var prevOnError = window.onerror;
-        window.onerror = function (msg, url, lineNo, colNo, error) {
-          if (shouldSuppress(msg, url, '')) {
+        window.addEventListener('unhandledrejection', function (e) {
+          var reason = String((e && e.reason && (e.reason.message || e.reason)) || '');
+          if (reason.indexOf('Script error') !== -1) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
+        }, true);
+        window.onerror = function (msg) {
+          if (typeof msg === 'string' && msg.indexOf('Script error') !== -1) {
             return true;
           }
-          if (typeof prevOnError === 'function') {
-            return prevOnError.apply(this, arguments);
-          }
-          return false;
         };
       })();
     </script>
@@ -73,13 +44,6 @@
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "ynvzmyqr6q");
       }
-    </script>
-    <script type="text/javascript">
-      window.disqus_config = function () {
-        this.page = this.page || {};
-        this.page.url = 'https://firsttimehdb.vercel.app/';
-        this.page.identifier = 'home';
-      };
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
