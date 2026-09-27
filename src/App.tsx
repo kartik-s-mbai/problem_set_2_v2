@@ -273,7 +273,7 @@ function DisqusComments() {
         <h2 className="text-xl font-bold text-slate-900">Visitor Feedback</h2>
         <p className="text-sm text-slate-600 mt-1">Please let us know what worked for you and what did not.</p>
       </div>
-      <div id="disqus_thread"></div>
+      <div id="disqus_thread" style={{ color: '#1e293b', backgroundColor: '#f8fafc' }}></div>
       <noscript>
         Please enable JavaScript to view the{' '}
         <a href="https://disqus.com/?ref_noscript" rel="nofollow">
