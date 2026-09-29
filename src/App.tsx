@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Home, Activity, ShieldCheck, Sparkles } from 'lucide-react';
+import { Home, Activity, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import type { ResaleData, FetchStatus } from './types';
 
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'] as const;
@@ -47,11 +47,12 @@ function formatNumber(val: number): string {
 
 function formatMonth(monthStr: string | null): string {
   if (!monthStr) return '';
-  const [year, month] = monthStr.split('-');
-  if (!year || !month) return monthStr;
-  const date = new Date(Number(year), Number(month) - 1);
-  const formatted = date.toLocaleString('en-SG', { month: 'long', year: 'numeric' });
-  return `${formatted} (${monthStr})`;
+  const parts = monthStr.split('-');
+  if (parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))) {
+    return monthStr;
+  }
+  const date = new Date(Number(parts[0]), Number(parts[1]) - 1);
+  return date.toLocaleString('en-SG', { month: 'long', year: 'numeric' });
 }
 
 interface FlatTypeCardProps {
@@ -193,9 +194,9 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
                 </p>
                 {data.minPrice !== null && data.minPrice !== undefined && (
                   <div id={`details-${cardIdPrefix}`} className="mt-2.5 space-y-1 text-xs text-slate-600">
-                    <p id={`range-${cardIdPrefix}`}>Range: S${formatNumber(data.minPrice)} – S${formatNumber(data.maxPrice!)}</p>
+                    <p id={`range-${cardIdPrefix}`}>Range: ${formatNumber(data.minPrice)} – ${formatNumber(data.maxPrice!)}</p>
                     <p id={`persqft-${cardIdPrefix}`}>
-                      Per sq ft: S${formatNumber(data.medianPricePerSqft ?? (data.medianPricePerSqm ? Math.round(data.medianPricePerSqm / 10.7639) : 0))}
+                      Per sq ft: ${formatNumber(data.medianPricePerSqft ?? (data.medianPricePerSqm ? Math.round(data.medianPricePerSqm / 10.7639) : 0))}
                     </p>
                     <p id={`lease-${cardIdPrefix}`}>Remaining lease: {data.medianRemainingLeaseYears} years (median)</p>
                   </div>
@@ -207,8 +208,18 @@ function FlatTypeCard({ town, flatType }: FlatTypeCardProps) {
                 <span id={`count-${cardIdPrefix}`} className="font-semibold text-slate-800">
                   {data.count} {data.count === 1 ? 'transaction' : 'transactions'}
                 </span>
-                <span>recorded in {data.month}</span>
+                <span>recorded in {formatMonth(data.month)}</span>
               </div>
+
+              {data.count < 5 && (
+                <div
+                  id={`warning-sample-${cardIdPrefix}`}
+                  className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2"
+                >
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>Low sample size: based on fewer than 5 transactions. Use this benchmark with caution.</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -370,7 +381,7 @@ export default function App() {
             {headingText}
           </h1>
           <p id="page-subheading" className="mt-2 text-slate-600 text-sm sm:text-base max-w-2xl leading-relaxed">
-            Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget.
+            Recent resale flat transaction prices and benchmarks across {isAllSingapore ? 'Singapore' : chosenTownDisplay}.
             Latest median resale benchmark computed directly from verified data.gov.sg records.
           </p>
         </div>

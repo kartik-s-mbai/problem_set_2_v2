@@ -7,6 +7,41 @@ function parseRemainingLease(str) {
   return years + months / 12;
 }
 
+function getTrailing3CalendarMonths(latestMonthStr) {
+  if (!latestMonthStr || typeof latestMonthStr !== 'string') return [];
+  const parts = latestMonthStr.split('-');
+  if (parts.length !== 2) return [latestMonthStr];
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  if (isNaN(year) || isNaN(month)) return [latestMonthStr];
+
+  const result = [];
+  for (let i = 2; i >= 0; i--) {
+    let m = month - i;
+    let y = year;
+    while (m <= 0) {
+      m += 12;
+      y -= 1;
+    }
+    result.push(`${y}-${String(m).padStart(2, '0')}`);
+  }
+  return result;
+}
+
+function formatPeriod(startMonthStr, endMonthStr) {
+  const [startYear, startMonth] = startMonthStr.split('-').map(Number);
+  const [endYear, endMonth] = endMonthStr.split('-').map(Number);
+  const startDate = new Date(startYear, startMonth - 1);
+  const endDate = new Date(endYear, endMonth - 1);
+  const startMonthName = startDate.toLocaleString('en-SG', { month: 'long' });
+  const endMonthName = endDate.toLocaleString('en-SG', { month: 'long' });
+
+  if (startYear === endYear) {
+    return `${startMonthName}–${endMonthName} ${endYear}`;
+  }
+  return `${startMonthName} ${startYear}–${endMonthName} ${endYear}`;
+}
+
 function computeMetrics(records) {
   if (!records || records.length === 0) {
     return {
@@ -346,13 +381,41 @@ export default async function handler(req, res) {
   const mostRecentMonth = months[months.length - 1];
 
   const latestRecords = records.filter((r) => r.month === mostRecentMonth);
-  const metrics = computeMetrics(latestRecords);
+
+  if (latestRecords.length >= 5) {
+    const metrics = computeMetrics(latestRecords);
+
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
+    return res.status(200).json({
+      town,
+      flatType,
+      month: mostRecentMonth,
+      period: mostRecentMonth,
+      isAggregated: false,
+      medianPrice: metrics.medianPrice,
+      minPrice: metrics.minPrice,
+      maxPrice: metrics.maxPrice,
+      medianPricePerSqm: metrics.medianPricePerSqm,
+      medianPricePerSqft: metrics.medianPricePerSqft,
+      medianPricePerSqFt: metrics.medianPricePerSqFt,
+      medianRemainingLeaseYears: metrics.medianRemainingLeaseYears,
+      count: metrics.count
+    });
+  }
+
+  // Fewer than 5 transactions in latest month: aggregate the most recent 3 months
+  const trailingMonths = getTrailing3CalendarMonths(mostRecentMonth);
+  const aggregatedRecords = records.filter((r) => trailingMonths.includes(r.month));
+  const metrics = computeMetrics(aggregatedRecords);
+  const periodLabel = formatPeriod(trailingMonths[0], trailingMonths[trailingMonths.length - 1]);
 
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
   return res.status(200).json({
     town,
     flatType,
-    month: mostRecentMonth,
+    month: periodLabel,
+    period: periodLabel,
+    isAggregated: true,
     medianPrice: metrics.medianPrice,
     minPrice: metrics.minPrice,
     maxPrice: metrics.maxPrice,

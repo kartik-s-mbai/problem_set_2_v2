@@ -2,6 +2,8 @@ export interface ResaleData {
   town: string;
   flatType: string;
   month: string | null;
+  period?: string | null;
+  isAggregated?: boolean;
   medianPrice: number | null;
   minPrice: number | null;
   maxPrice: number | null;
