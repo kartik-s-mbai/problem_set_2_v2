@@ -557,3 +557,413 @@ Two related issues should stay out of this rating. First, if the information tur
 The observation would be **a result card on the live site, for any town, flat type, or screen width, that shows the price without the range and transaction count.** If one turns up, the rating should rise to about 2, the level A argued, because A's impact reasoning is sound and nothing contradicts it.
 
 It's quick to collect. Ask A for the exact town and flat type they queried, then run that query plus a handful of others (including a low-volume town and a phone-width viewport) and screenshot each card. Whoever has Vercel access can also check the deployment history to see whether the range and count were added after A's review. That would explain both reports without either reviewer being wrong.
+
+# Problem Set 4 — Step 5 Revision Prompts
+
+## Repair 1: Low Sample Size in Resale Benchmarks
+
+### Sceptical Review Prompt
+
+ROLE: You are a sceptical senior developer and usability reviewer working in my
+existing project. Before you write any code, your job is to argue against the repair
+I propose.
+
+CONTEXT:
+- Live address: https://firsttimehdb.vercel.app/
+- Who the product is for, and what it does for them: First time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+- The finding, in its six lines:
+
+Where: https://firsttimehdb.vercel.app/, the 3 Room, 4 Room and 5 Room resale price cards.
+
+What I did, what I saw: I selected Bukit Timah. The 3 Room card showed a median resale
+price of $480,000 based on 1 transaction, and the 4 Room card showed $930,000 based
+on 1 transaction. The 5 Room card was based on only 3 transactions. All figures were
+from the current unfinished month, September 2026.
+
+Which heuristic: 1, Visibility of System Status.
+
+Screen or system: System. The benchmark is calculated from only the latest month, so
+low-volume towns can produce a median from one or two sales.
+
+Severity, and why: 3, driven by impact and damage to trust. A first time buyer may
+interpret a single sale as a meaningful town benchmark.
+
+The repair: When the current month has a very small number of transactions, the user
+should be clearly warned that the benchmark is based on a low sample size and should
+be treated with caution.
+
+- The evidence behind it: 2 of 3 groupmates raised this problem independently.
+- The repair I propose: Keep the existing calculations, but show a clear low sample
+warning whenever a result is based on fewer than 5 transactions.
+
+GOAL: Argue against my repair.
+1. Does it solve the problem the finding describes, or a problem I already believed I had?
+2. Does the problem belong to the screen or to the system, and does my repair sit in the right half?
+3. Name one heuristic this repair could break while it serves the one above, and how.
+4. Propose the smallest alternative that would make the same thing true.
+5. Tell me exactly what to do on the live address to check that the repair worked.
+
+OUTPUT: Your arguments first, as a numbered list. Then stop. Write no code until I
+reply with the repair I have chosen.
+
+GUARDRAILS: Do not tell me the repair is good. If you have no strong reason to doubt
+it, say so plainly instead of inventing one. When I do ask you to build, change only
+what the repair needs. Do not remove Disqus or the privacy notice, and do not break
+/api/health.
+
+### AI Studio Response
+
+1. **Does it solve the problem the finding describes, or a problem you already believed you had?**  
+   It solves a problem of disclosure, not the user problem identified in the finding. The user problem is that first-time buyers come to the site to find a dependable benchmark for budgeting, and the site gives them a volatile figure (e.g. $480,000 for a 3-room in Bukit Timah) that represents a single transaction rather than an actual market median. The card *already* displays the exact transaction count right beneath the price (e.g. "1 transaction recorded in 2026-09"). Two of your groupmates still flagged the issue because presenting an unrepresentative single data point as the primary headline figure in 36px bold text undermines credibility, regardless of fine print. A warning banner simply shifts the cognitive burden to an anxious buyer to guess what to do with a number the system itself admits is untrustworthy.
+
+2. **Does the problem belong to the screen or to the system, and does your repair sit in the right half?**  
+   The problem belongs firmly to the **system**, but your proposed repair sits entirely on the **screen**. The root cause is the backend query logic (/api/resale), which restricts the aggregation strictly to month = latest_available_month, even when that month is incomplete or has near-zero volume for smaller estates. Applying a screen-side warning banner is a cosmetic band-aid on a pipeline defect: it leaves the brittle data model intact and uses UI real estate to apologize for it.
+
+3. **Name one heuristic this repair could break while it serves the one above, and how.**  
+   **Heuristic 5: Error Prevention** (and secondarily **Heuristic 8: Aesthetic and Minimalist Design**).
+   - By continuing to render an invalid statistical outlier as a prominent price headline, the interface fails to prevent cognitive anchoring. In housing decisions, users involuntarily anchor on the first bold dollar figure they see, even when a disclaimer is placed next to it.
+   - Visually, adding warning containers across multiple cards (in estates like Bukit Timah or Marine Parade where all 3 flat types often have < 5 transactions) clutters the cards with alarmist banners alongside existing badges, range lines, and lease metadata, breaking minimalist visual hierarchy.
+
+4. **Propose the smallest alternative that would make the same thing true.**
+   - **System alternative (recommended, minimal code change in server.ts):** When the latest month yields fewer than 5 records for a town/type combination, have the query aggregate over a trailing 3-month window (e.g., July–September 2026). This produces an authentic, statistically grounded median without needing any new warning UI.
+   - **Screen alternative (if backend logic must remain untouched):** When count < 5, suppress the prominent "Median Resale Price" label and giant dollar figure entirely, replacing it with a clean neutral state: e.g. "Insufficient volume in [Month] to establish a median benchmark (fewer than 5 transactions)" or label it directly as "Last recorded transaction: $X" rather than presenting it as a "Median".
+
+5. **Tell me exactly what to do on the live address to check that the repair worked.**
+   1. Navigate to https://firsttimehdb.vercel.app/.
+   2. Open the **Town** dropdown and select **Bukit Timah** (or **Marine Parade**).
+   3. Inspect the **3 ROOM** and **4 ROOM** cards (which currently show 1 transaction for the latest month).
+   4. Verify that the low-sample treatment is visible, accurate, and cleanly aligned without breaking card heights or layout symmetry across the 3-column grid.
+   5. Switch the dropdown back to **Tampines**, **Woodlands**, or **All of Singapore** (where counts well exceed 5) and verify that the normal median presentation displays without any warning or degradation.
+
+### My Decision
+
+I choose the system repair.
+
+If the latest available month has fewer than 5 transactions for a town and flat type, aggregate the most recent 3 months of available transactions for that same town and flat type instead.
+
+The card must clearly show the actual period used, for example "July–September 2026", and the transaction count must reflect that full period.
+
+If the latest month has 5 or more transactions, keep the current latest-month behavior unchanged.
+
+Change only what is required for this repair. Do not change the layout, styling, Disqus, privacy notice, or any unrelated functionality. Do not break /api/health.
+
+### AI Studio Implementation Response
+
+The system repair has been implemented:
+
+- **Aggregation Logic (/api/resale)**:
+  - When the latest available month has **5 or more transactions** (e.g., high-volume towns like Tampines), the response retains the current single-month benchmark (2026-09) and count.
+  - When the latest available month has **fewer than 5 transactions** for a town and flat type, the endpoint aggregates the transactions from the trailing 3-month window (e.g., July–September 2026).
+  - The calculated median price, price range, price per sq ft/sqm, and remaining lease are computed across this full 3-month period.
+- **Card Display**:
+  - The badge and transaction footer display the exact period used (e.g., "July–September 2026" for Bukit Timah 3 Room, 4 Room, and 5 Room).
+  - The transaction counter reflects the total transactions recorded across that entire 3-month period.
+- **Guardrails**:
+  - Styling, grid layout, Disqus integration, and privacy notice remain intact.
+  - /api/health continues to return 200 OK.
+  - Type checking, compilation, and production builds completed cleanly.
+
+### Live Check and Follow-Up
+
+I tested the revised product on the live address.
+
+Tampines continued to use September 2026 because its flat types had more than 5 transactions.
+
+Bukit Timah correctly switched to the July–September 2026 fallback period. However, the 3 Room result still had only 2 transactions and the 4 Room result still had only 4 transactions after expanding the period to three months.
+
+The system repair therefore improved the sample size, but did not completely eliminate the low-sample problem for very low-volume categories.
+
+### Follow-Up Safeguard Prompt
+
+The 3-month fallback is working correctly, but the live test shows that some low-volume categories still have fewer than 5 transactions even after the fallback.
+
+Keep the current 3-month fallback exactly as implemented.
+
+Add one additional safeguard only:
+If the final 3-month transaction count is still fewer than 5, show a short warning on that card saying:
+
+"Low sample size: based on fewer than 5 transactions. Use this benchmark with caution."
+
+Do not show the warning when the final count is 5 or more.
+
+Change nothing else. Do not alter the aggregation logic, layout, Disqus, privacy notice, or /api/health.
+
+### AI Studio Response
+
+The safeguard has been added:
+
+- **Condition**: On any flat type card where the final transaction count is fewer than 5 (even after the 3-month aggregation window), a warning callout is displayed:
+  > *"Low sample size: based on fewer than 5 transactions. Use this benchmark with caution."*
+- **Suppression**: When the final count is 5 or more (e.g. Bukit Timah 5 Room with 7 sales, or Tampines with 78 sales), no warning is rendered.
+- **Integrity**: Aggregation logic in /api/resale, card layouts, Disqus, privacy notices, and /api/health (verified returning status 200) remain unchanged. Production assets compiled cleanly.
+
+### Final Verification
+
+On the live address:
+
+- Bukit Timah 3 Room showed the July–September 2026 fallback with 2 transactions and the low-sample warning.
+- Bukit Timah 4 Room showed the July–September 2026 fallback with 4 transactions and the low-sample warning.
+- Bukit Timah 5 Room showed 7 transactions and did not display the warning.
+- High-volume towns continued to use the latest month and did not display the warning.
+- Disqus remained functional.
+- /api/health continued to work.
+
+
+## Repair 2: Budget Wording Mismatch
+
+### Sceptical Review Prompt
+
+ROLE: You are a sceptical senior developer and usability reviewer working in my
+existing project. Before you write any code, your job is to argue against the repair
+I propose.
+
+CONTEXT:
+- Live address: https://firsttimehdb.vercel.app/
+- Who the product is for, and what it does for them: First time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+- The finding, in its six lines:
+
+Where: https://firsttimehdb.vercel.app/, main screen introduction.
+
+What I did, what I saw: The page says it is "Evaluating whether a flat in Singapore fits
+your housing budget," but there is no place to enter a budget and the tool does not
+calculate whether a flat is affordable for a particular user. It shows resale price
+benchmarks by town and flat type.
+
+Which heuristic: 2, Match Between the System and the Real World.
+
+Screen or system: Screen. The functionality works, but the wording describes a broader
+job than the product actually performs.
+
+Severity, and why: 2. Two groupmates independently noticed the mismatch. A blind
+arbiter also rated it 2 because the wording can create the wrong expectation, although
+there was no evidence that users made a costly affordability decision because of it.
+
+The repair: Change the introductory wording so it accurately describes the product as
+a resale price checking tool rather than implying that it evaluates a user's personal budget.
+
+- The evidence behind it: 2 of 3 groupmates raised this problem independently, and the
+blind arbiter rated it severity 2.
+
+- The repair I propose: Replace the current sentence
+"Evaluating whether a flat in Singapore fits your housing budget."
+with:
+"Check what HDB resale flats are actually selling for by town and flat type."
+
+Keep the title "Singapore HDB Resale Prices" unchanged.
+
+GOAL: Argue against my repair.
+1. Does it solve the problem the finding describes, or a problem I already believed I had?
+2. Does the problem belong to the screen or to the system, and does my repair sit in the right half?
+3. Name one heuristic this repair could break while it serves the one above, and how.
+4. Propose the smallest alternative that would make the same thing true.
+5. Tell me exactly what to do on the live address to check that the repair worked.
+
+OUTPUT: Your arguments first, as a numbered list. Then stop. Write no code until I
+reply with the repair I have chosen.
+
+GUARDRAILS: Do not tell me the repair is good. If you have no strong reason to doubt
+it, say so plainly instead of inventing one. When I do ask you to build, change only
+what the repair needs. Do not remove Disqus or the privacy notice, and do not break
+/api/health.
+
+### AI Studio Response
+
+1. **Does it solve the problem the finding describes, or a problem you already believed I had?**  
+   It solves the symptom identified in the finding—that the site overpromises a personalized affordability/budget evaluation calculator that does not exist—but it does so by retreating into generic marketing copy. Notice that the current implementation dynamically reflects the user's active context: "Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget." Hardcoding "Check what HDB resale flats are actually selling for by town and flat type." discards that locality awareness. It replaces a misleading verb with a generic imperative that repeats what the user can already see from the dropdown and cards.
+
+2. **Does the problem belong to the screen or to the system, and does your repair sit in the right half?**  
+   The finding classifies this as a **screen** issue, and your repair sits on the screen. However, from a product positioning perspective, the mismatch exists because your branding badge above the heading still declares "First-Time Buyer Guide". If the system is merely a read-only viewer for data.gov.sg percentiles, stripping the word "budget" from the screen solves the literal copy discrepancy, but leaves the underlying system mismatch intact: first-time buyers need affordability guidance, and the system still offers only raw median benchmarks.
+
+3. **Name one heuristic this repair could break while it serves the one above, and how.**  
+   **Heuristic 8: Aesthetic and Minimalist Design (Unnecessary Redundancy)**.
+   - The page heading is already "[Town] HDB Resale Prices", the selector directly underneath is labeled "Town", and the three primary cards are explicitly titled "3 ROOM", "4 ROOM", and "5 ROOM".
+   - Adding the sentence *"Check what HDB resale flats are actually selling for by town and flat type"* describes the visual interface elements in words rather than communicating actual utility or data provenance. It adds textual clutter without providing new information.
+   - Alternatively, it impairs **Heuristic 1: Visibility of System Status**, because eliminating the active town name from the subheader removes an immediate reassurance that the page context has updated to the selected estate.
+
+4. **Propose the smallest alternative that would make the same thing true.**  
+   Keep the dynamic locality binding and simply replace the inaccurate verb phrase with a factual descriptive statement:
+   - Change:  
+     Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget.
+   - To:  
+     Recent resale flat transaction prices and benchmarks across {isAllSingapore ? 'Singapore' : chosenTownDisplay}.  
+     This is a one-sentence edit that eliminates the false promise of personal budget evaluation while preserving contextual town responsiveness.
+
+5. **Tell me exactly what to do on the live address to check that the repair worked.**
+   1. Navigate to https://firsttimehdb.vercel.app/.
+   2. Inspect the introductory paragraph (#page-subheading) directly below the main heading "Singapore HDB Resale Prices".
+   3. Confirm that "Evaluating whether a flat in Singapore fits your housing budget." has been removed and replaced with the agreed text.
+   4. Switch the Town dropdown from **All of Singapore** to **Bukit Timah** (and **Bedok**), verifying that the text is legible, does not cause jarring reflow or overlap with the dropdown, and that the cards below continue to fetch and render normally.
+
+### My Decision
+
+I accept the smaller alternative.
+
+Replace the current subheading:
+
+"Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget."
+
+with:
+
+"Recent resale flat transaction prices and benchmarks across {isAllSingapore ? 'Singapore' : chosenTownDisplay}."
+
+Keep the dynamic town name behavior.
+
+Change only this wording. Do not change the title, layout, styling, data logic, Disqus, privacy notice, or any unrelated functionality. Do not break /api/health.
+
+### AI Studio Implementation Response
+
+The repair has been implemented:
+
+- **Subheading Wording**: Updated the first sentence of the introduction in src/App.tsx from:
+  > *"Evaluating whether a flat in {isAllSingapore ? 'Singapore' : chosenTownDisplay} fits your housing budget."*
+  to:
+  > *"Recent resale flat transaction prices and benchmarks across {isAllSingapore ? 'Singapore' : chosenTownDisplay}."*
+- **Integrity**:
+  - Dynamic town naming behavior (Singapore vs. selected town display name) is preserved.
+  - Page title, layout, styling, data aggregation, Disqus discussion thread, and privacy notice remain intact.
+  - /api/health verified returning status 200. TypeScript compilation and production build completed without errors.
+
+### Verification
+
+The revised subheading correctly describes the product as a resale transaction price and benchmark tool rather than implying that it calculates personal affordability.
+
+The selected town remains dynamically reflected in the wording.
+
+
+## Repair 3: Currency and Date Formatting Consistency
+
+### Sceptical Review Prompt
+
+ROLE: You are a sceptical senior developer and usability reviewer working in my
+existing project. Before you write any code, your job is to argue against the repair
+I propose.
+
+CONTEXT:
+- Live address: https://firsttimehdb.vercel.app/
+- Who the product is for, and what it does for them: First time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+- The finding, in its six lines:
+
+Where: https://firsttimehdb.vercel.app/, the resale price result cards.
+
+What I did, what I saw: The cards use inconsistent currency and date formats. The main
+median price uses "$" while the range and per-square-foot values use "S$". High-volume
+results show dates such as "September 2026 (2026-09)" in the badge and "recorded in
+2026-09" in the footer, while low-volume fallback results show a human-readable period
+such as "July–September 2026".
+
+Which heuristic: 4, Consistency and Standards.
+
+Screen or system: Screen. The underlying data is correct, but the same types of
+information are displayed in different formats.
+
+Severity, and why: 2. The inconsistency does not prevent use, but it makes the cards
+look less polished and forces the user to interpret multiple formats for the same
+currency and date information.
+
+The repair: Use one consistent currency and date format across every result card.
+
+- The evidence behind it: 1 of 3 groupmates raised this problem.
+- The repair I propose:
+  1. Use "S$" for the headline median resale price as well as all supporting price figures.
+  2. For a single-month result, show "September 2026" in the badge and
+     "recorded in September 2026" in the footer.
+  3. For a multi-month result, keep the human-readable period such as
+     "July–September 2026" in both the badge and footer.
+  4. Remove technical YYYY-MM strings such as "2026-09" from the visible cards.
+
+GOAL: Argue against my repair.
+1. Does it solve the problem the finding describes, or a problem I already believed I had?
+2. Does the problem belong to the screen or to the system, and does my repair sit in the right half?
+3. Name one heuristic this repair could break while it serves the one above, and how.
+4. Propose the smallest alternative that would make the same thing true.
+5. Tell me exactly what to do on the live address to check that the repair worked.
+
+OUTPUT: Your arguments first, as a numbered list. Then stop. Write no code until I
+reply with the repair I have chosen.
+
+GUARDRAILS: Do not tell me the repair is good. If you have no strong reason to doubt
+it, say so plainly instead of inventing one. When I do ask you to build, change only
+what the repair needs. Do not remove Disqus or the privacy notice, and do not break
+/api/health.
+
+### AI Studio Response
+
+1. **Does it solve the problem the finding describes, or a problem you already believed I had?**  
+   It directly targets the inconsistency noted in the finding, but it makes an unvalidated assumption about *which* standard to enforce. In Singapore, local property portals and government agencies (HDB, URA) routinely use $ rather than S$ because there is no domestic ambiguity. Adding S$ to the headline median price lengthens high-figure numbers (e.g., S$1,180,000), which increases line wrapping pressure on mobile viewports. Furthermore, completely stripping the YYYY-MM technical string removes the exact query key needed if an analytical buyer wishes to cross-reference records against the raw data.gov.sg datastore.
+
+2. **Does the problem belong to the screen or to the system, and does your repair sit in the right half?**  
+   The problem belongs squarely to the **screen** (presentation layer in src/App.tsx), and your repair sits in the right half. The API already delivers clean numeric figures and month/period identifiers; the discrepancy exists solely because formatCurrency uses standard en-SG locale ($), while the details block hardcodes S$, and the footer bypasses formatMonth to print raw data.month.
+
+3. **Name one heuristic this repair could break while it serves the one above, and how.**  
+   **Heuristic 8: Aesthetic and Minimalist Design (Redundancy and Visual Density)**.
+   - If a card displays "September 2026" in the top-right header badge and then repeats "recorded in September 2026" in the footer box directly below the price, the exact same human-readable date string appears twice within a 150px vertical span on the same card.
+   - Additionally, prefixing S$ to the text-3xl sm:text-4xl font-black headline expands the headline bounding box, crowding the visual hierarchy on narrow mobile viewports (360px and below).
+
+4. **Propose the smallest alternative that would make the same thing true.**
+   - **Currency**: Unify on standard domestic $ rather than S$. Drop the manual "S" from the Range and Per-sq-ft labels (Range: $..., Per sq ft: $...) so all currency figures cleanly match the output of Intl.NumberFormat('en-SG').
+   - **Date**: Create a single helper function getDisplayPeriod(monthStr):
+     - If it matches YYYY-MM, format it as "September 2026".
+     - If it is already a range (e.g., "July–September 2026"), pass it through.
+     - Use this single formatted string in both the badge and the footer.
+
+5. **Tell me exactly what to do on the live address to check that the repair worked.**
+   1. Navigate to https://firsttimehdb.vercel.app/ with default town ("All of Singapore") or "Tampines".
+   2. Verify that the currency prefix on the headline median price (#price-4-room), the range line (#range-4-room), and the per-sq-ft line (#persqft-4-room) are completely uniform.
+   3. Check the badge (#badge-month-4-room) at the top right: confirm it reads "September 2026" without (2026-09).
+   4. Check the footer: confirm it reads "recorded in September 2026" rather than "recorded in 2026-09".
+   5. Switch the town dropdown to **Bukit Timah**: confirm that low-volume cards with fallback periods show "July–September 2026" in both the badge and the footer, with matching currency formatting.
+
+### My Decision
+
+I accept the smaller alternative.
+
+Make the following screen-level consistency changes only:
+
+1. Use "$" consistently for all visible currency values on the result cards.
+   - Keep the headline median price as "$".
+   - Change the Range and Per sq ft values from "S$" to "$".
+
+2. Use one human-readable date format everywhere.
+   - For a single-month result, show "September 2026" in both the badge and footer.
+   - For a multi-month fallback result, show the existing human-readable range such as "July–September 2026" in both the badge and footer.
+   - Remove visible technical YYYY-MM strings such as "2026-09" from the cards.
+
+Change only this presentation formatting. Do not change the aggregation logic, calculations, layout, Disqus, privacy notice, or any unrelated functionality. Do not break /api/health.
+
+### AI Studio Implementation Response
+
+The presentation formatting changes have been applied:
+
+1. **Currency Consistency**:
+   - The headline median resale price retains the standard domestic $ prefix (e.g., $671,500).
+   - Range and Per-sq-ft figures now consistently use $ instead of S$ (e.g., Range: $580,000 – $760,000, Per sq ft: $625).
+
+2. **Date Format Standardization**:
+   - Single-month results display the human-readable month and year (e.g., "September 2026") in both the top-right badge and the footer ("recorded in September 2026").
+   - Multi-month fallback results display the human-readable range (e.g., "July–September 2026") in both the badge and the footer ("recorded in July–September 2026").
+   - Technical YYYY-MM strings (such as "2026-09") have been removed from the user-facing cards.
+
+All aggregation logic, calculations, layout, Disqus integration, privacy notice, and /api/health remain intact and functional.
+
+### Final Verification
+
+The live product was checked after the change.
+
+High-volume towns display:
+- "$" consistently across the headline price, range and per-square-foot figures.
+- A human-readable single-month period such as "September 2026".
+- No visible technical YYYY-MM date strings.
+
+Bukit Timah displays:
+- "$" consistently across all currency figures.
+- "July–September 2026" consistently for the fallback period.
+- Low-sample warnings for the 3 Room and 4 Room cards.
+- No low-sample warning for the 5 Room card because the fallback contains 7 transactions.
+
+Disqus and /api/health remain functional.
