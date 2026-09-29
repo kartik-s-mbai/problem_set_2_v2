@@ -441,3 +441,119 @@ A quick way to answer it is a five-person think-aloud test, done remotely in a d
 If three or more of the five treat the median as their flat's price without adjusting for floor or lease, the cost is established and the rating should move to 3. If most use the range and describe the figure as an area-level guide, 2 stands.
 
 Asking the two other reviewers for their severities would be even faster and is standard practice. It would add opinions, though, not evidence on cost, so it would not settle the deciding factor.
+
+## Blind Arbiter: Missing Price Range and Transaction Count
+
+### Prompt
+
+ROLE: You are a neutral arbiter between two usability reviewers who rated the same
+claimed problem differently. You do not know which of them built the product. Do not
+try to work it out.
+
+CONTEXT: The product is an AI-augmented web app for first-time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+Both reviewers inspected it against Nielsen's ten usability heuristics and rated the
+problem on this severity scale:
+
+0 I don't agree that this is a usability problem at all.
+1 Cosmetic problem only. Need not be fixed unless extra time is available.
+2 Minor usability problem. Fixing this should be given low priority.
+3 Major usability problem. Important to fix, so should be given high priority.
+4 Usability catastrophe. Imperative to fix before the product can be released.
+
+A rating rests on four factors: how often the problem happens, what it costs when it
+does, whether the person can learn around it, and whether it damages the product's
+standing out of proportion.
+
+REVIEWER A:
+
+Where: https://firsttimehdb.vercel.app/, main screen, resale price result.
+
+What I did, what I saw: After receiving the resale price result, I wanted to understand
+how much actual flats in that category varied in price. The product only showed the
+average, so I could not tell whether most flats were close to that number or whether
+the actual prices were spread across a wide range.
+
+Which heuristic: 1, Visibility of System Status.
+
+Screen or system: Screen. The page could show more information beside the main price
+result.
+
+Severity, and why: 2. The main result gives the user a useful starting point, but without
+the range or number of transactions it is difficult to understand how representative
+the estimate actually is.
+
+The repair: Show additional information beside the main result, such as the lowest
+price, highest price, median price and number of transactions used in the calculation.
+
+
+REVIEWER B:
+
+Where: https://firsttimehdb.vercel.app/, the 3 Room, 4 Room and 5 Room resale price cards.
+
+What I did, what I saw: I repeated the same check on the live site. Each result card
+already showed a headline labelled "Median Resale Price", a minimum-to-maximum price
+range, and the number of transactions used. For example, the Bukit Timah 3 Room card
+showed a median of $480,000, a range of S$480,000 to S$480,000, and 1 transaction.
+The same types of information were visible on the other result cards.
+
+Which heuristic: 1, Visibility of System Status.
+
+Screen or system: Screen. The information described as missing is already displayed
+directly on the result cards.
+
+Severity, and why: 0. I do not agree that the claimed usability problem is present on
+the live site because the median, range and transaction count are already visible.
+
+The repair: No repair for this specific finding. Keep the median, range and transaction
+count visible on each result card.
+
+
+EVIDENCE NEITHER REVIEWER CONTROLS:
+
+- Groupmates who raised this problem independently: 1 out of 3 groupmates who reviewed
+  the product.
+- Severities that reviewers other than A and B gave this problem: NONE.
+
+GOAL: Judge the evidence, not the reviewers.
+
+1. Say whether A and B describe the same claimed problem. If they do not, say so and stop.
+2. For each of the four factors, say what the evidence shows and what it cannot show.
+3. Give the severity the evidence supports, and name the factor that decided it.
+4. Name the one observation that would change your rating, and say how it could be
+   collected quickly.
+
+GUARDRAILS: Do not split the difference between A and B unless the evidence puts the
+rating there. If the evidence is too thin to decide, say so plainly instead of inventing
+a reason. Do not ask which reviewer built the product.
+
+### Claude Response
+
+### 1. Same claimed problem?
+
+Yes. Both reviewers are describing the same element, the resale price result, and the same claim: that the result doesn't show enough to judge how representative the headline price is (spread and number of transactions). A's proposed repair (lowest, highest, median, count) matches, item for item, what B says is already on the card. So they aren't disagreeing about how bad the problem is. They're disagreeing about whether it exists. Both chose heuristic 1, so the heuristic isn't in dispute.
+
+I fetched the live URL to see whether it could settle this. It returned only the page shell, because the result cards render in the browser after a query. The page's own meta description says the product shows "median resale price and transaction volume." That supports B on two of the four items. It doesn't mention the range, and it only reflects the current deployment, not whatever A saw.
+
+### 2. The four factors
+
+**Frequency.** If the information were missing, this would hit every result for every user who wants to judge representativeness, so frequency would be high. But the evidence on whether it's missing favours B. B gives a specific, checkable instance (Bukit Timah 3 Room, $480,000, range S$480,000–S$480,000, 1 transaction) and says it holds across cards. A gives no town, flat type, or figure. A also calls the number an "average" when, per B, the card is labelled "Median Resale Price," which suggests A either read the card loosely or saw a different version. Only 1 of 3 groupmates raised the problem, and the prompt doesn't say whether that one is A. What the evidence can't show is whether A saw an earlier build, a different viewport such as mobile, or an edge-case state where the range and count really don't render.
+
+**Impact.** If the information were absent, the cost would be real but moderate. A first-time buyer could anchor on one number without knowing whether flats sell tightly around it or across a wide band. That cost disappears if the information is present. The evidence can't show whether any user has actually misjudged a budget this way.
+
+**Persistence.** If the information were absent, users couldn't learn around it inside the product, because no amount of familiarity reveals data that isn't there. If it's present and A simply overlooked it, a second look at the same card would fix that. There's no evidence on whether real users notice the range and count.
+
+**Market impact.** For a product whose whole purpose is price transparency, appearing to hide spread would hurt trust out of proportion. That only applies if the claim is true, and the evidence can't show how users or anyone else perceive the product.
+
+### 3. Rating
+
+**0, decided by frequency.** The evidence indicates the claimed condition doesn't occur on the live product. B's observation is specific and reproducible, A's isn't, and the product's own metadata supports B on median and count. The only uncertainty is A's unexplained observation, which could reflect an older build or an untested state. That keeps 0 from being certain, but it doesn't justify 1. Nobody has produced evidence of a cosmetic version of this problem, so rating 1 would just be splitting the difference.
+
+Two related issues should stay out of this rating. First, if the information turns out to be present but easy to overlook, that's a different problem about salience, not absence, and it needs its own finding and evidence. Second, B's own example shows a separate candidate problem: a headline "median" built from a single transaction, with the range collapsed to one number and no warning. For a first-time buyer, that may be the more serious representativeness issue. It deserves its own write-up rather than being folded into this one.
+
+### 4. The observation that would change the rating
+
+The observation would be **a result card on the live site, for any town, flat type, or screen width, that shows the price without the range and transaction count.** If one turns up, the rating should rise to about 2, the level A argued, because A's impact reasoning is sound and nothing contradicts it.
+
+It's quick to collect. Ask A for the exact town and flat type they queried, then run that query plus a handful of others (including a low-volume town and a phone-width viewport) and screenshot each card. Whoever has Vercel access can also check the deployment history to see whether the range and count were added after A's review. That would explain both reports without either reviewer being wrong.
