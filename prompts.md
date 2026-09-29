@@ -191,3 +191,125 @@ GUARDRAILS: Load the Disqus script only once, even when the component re-renders
 on the main page only, so that every comment lands in one thread. Do not change anything
 else on the page, and add no npm package without telling me why one is needed.
 
+## Blind Arbiter: Budget Checker Mismatch
+
+### Prompt
+
+ROLE: You are a neutral arbiter between two usability reviewers who rated the same
+problem differently. You do not know which of them built the product. Do not try to
+work it out.
+
+CONTEXT: The product is an AI-augmented web app for first-time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+Both reviewers inspected it against Nielsen's ten usability heuristics and rated the
+problem on this severity scale:
+
+0 I don't agree that this is a usability problem at all.
+1 Cosmetic problem only. Need not be fixed unless extra time is available.
+2 Minor usability problem. Fixing this should be given low priority.
+3 Major usability problem. Important to fix, so should be given high priority.
+4 Usability catastrophe. Imperative to fix before the product can be released.
+
+A rating rests on four factors: how often the problem happens, what it costs when it
+does, whether the person can learn around it, and whether it damages the product's
+standing out of proportion.
+
+REVIEWER A:
+
+Where: https://firsttimehdb.vercel.app/, the page heading and the three price cards.
+
+What I did, what I saw: The tab is titled "HDB Resale Budget Checker" and the page says
+"Evaluating whether a flat in Singapore fits your housing budget", but there is nowhere
+to enter a budget. The user has to keep their own budget in mind and compare it with
+the prices shown on the cards.
+
+Which heuristic: 6, Recognition Rather than Recall.
+
+Screen or system: Screen. The page already has the median and range for each flat type,
+which is enough to compare against a budget if the user could enter one.
+
+Severity, and why: 2, driven by how often it happens. Every first-time buyer arrives
+with a budget and meets this, although they can still compare the numbers in their head.
+
+The repair: A buyer can enter a budget once and see on each card whether it is under,
+within or above the typical price.
+
+
+REVIEWER B:
+
+Where: https://firsttimehdb.vercel.app/, main heading and resale price results.
+
+What I did, what I saw: I opened the site and looked at resale prices for different towns
+and flat types. The site says it helps determine whether a flat fits the user's housing
+budget, but it does not ask about salary, CPF, grants, loan eligibility, interest rates
+or other personal financial information. What it actually does is show resale price
+benchmarks using real HDB transaction data.
+
+Which heuristic: 2, Match Between the System and the Real World.
+
+Screen or system: Screen. The current data already supports a resale price benchmark,
+so the wording can be changed without changing the API or calculations.
+
+Severity, and why: 3. The wording can give the user the wrong expectation about what
+the product actually tells them, especially when they are making a major financial
+decision.
+
+The repair: Make it clear that the product shows HDB resale price benchmarks and does
+not calculate personal affordability.
+
+
+EVIDENCE NEITHER REVIEWER CONTROLS:
+
+- Reviewers who raised this problem independently, counting A and B: 3 out of 4.
+- Severities that reviewers other than A and B gave this problem: 3.
+
+GOAL: Judge the evidence, not the reviewers.
+
+1. Say whether A and B describe the same problem. If they do not, say so and stop.
+2. For each of the four factors, say what the evidence shows and what it cannot show.
+3. Give the severity the evidence supports, and name the factor that decided it.
+4. Name the one observation that would change your rating, and say how it could be
+   collected quickly.
+
+GUARDRAILS: Do not split the difference between A and B unless the evidence puts the
+rating there. If the evidence is too thin to decide, say so plainly instead of
+inventing a reason. Do not ask which reviewer built the product.
+
+### Claude Response
+
+### 1. Same problem?
+
+Yes. Both reviewers point at the same place, the heading and the price results, and the same defect: the page claims to evaluate whether a flat fits the user's budget, and nothing on it does that. A reads the gap as a missing feature that leaves the user holding their budget in memory. B reads it as a claim that overstates what the product does. These are two consequences of one mismatch, and whoever compiled the tally already counted them as one problem. The different heuristic numbers don't change that.
+
+The two repairs pull in opposite directions, which matters for whoever fixes this but not for the rating. A's repair makes the claim true by adding a budget comparison. B's repair makes the claim match the product. A's version could sharpen B's concern, because a card reading "within budget" is easier to mistake for an affordability verdict than a bare price range is.
+
+### 2. The four factors
+
+**Frequency.** The evidence here is strong and uncontested. The claim sits in the tab title and main heading, so every visitor meets it, and both reviewers agree. The 3-of-4 detection rate adds that the problem is conspicuous rather than something one reviewer happened on. The evidence can't show how many users actually read the heading and form an expectation from it. Reviewers noticing a claim is not users acting on it.
+
+**Impact.** This is the only factor where A and B truly disagree. A's cost is verified by inspection: there is no input, so the user compares a number in their head against three cards. That cost is real but small. B's cost, a buyer relying on the product as an affordability check in a major financial decision, would be serious, but no one observed it. It is an inference from the wording.
+
+The evidence partly weakens the strongest version of B's concern. The page asks for nothing about the user, so it's hard to leave believing it assessed *your* affordability. It does not rule out a subtler misreading: a first-time buyer might accept "sticker price versus my number" as the whole test because the product framed it that way, overlooking loan limits, CPF or grants. Nothing in the evidence says whether that happens.
+
+**Persistence.** For the recall burden, the evidence points to low persistence. The missing input is visible on first use, and the workaround is trivial and learned at once. For the misreading, persistence is unknown. A user who never notices the gap never learns around it, but no one checked.
+
+**Market impact.** There is a plausible argument that a "Budget Checker" with no budget check looks unfinished or overclaiming, and that this weighs more where users must trust the numbers. The high detection rate is consistent with the mismatch being easy to spot. Beyond that it is inference; there is no evidence about how users actually regard the product.
+
+The outside severity of 3 matches B and is the strongest point on that side. It arrives without reasoning, though. (It's also unclear whether it comes from one reviewer or both of the others.) It can't tell us whether that rater saw a cost A and B missed, or weighed the same hypothetical cost the way B did. The fourth reviewer's silence tells us nothing, since missed and dismissed look the same.
+
+Neither reviewer's point about ease of repair (data already present, wording changeable without touching the API) is one of the four factors. Ease of repair bears on priority, not severity.
+
+### 3. Severity: 2, decided by impact
+
+Frequency is high and agreed. Persistence and market impact don't clearly move the rating. It turns on impact, and the only cost the evidence establishes is the small one: a recall burden with an obvious workaround, met by everyone. That is a 2. A 3 needs the costly misreading B describes, and the evidence makes that misreading plausible without showing it. The outside 3 is a judgment, not an observation, and I can't weigh reasoning I can't see.
+
+To be plain, this 2 is a floor. The evidence is thin on exactly the factor that decides the rating. The rating stops at 2 because that is as far as the demonstrated cost reaches, not because 2 is the cautious choice.
+
+### 4. What would change the rating
+
+The observation that matters is whether first-time buyers, after using the page, believe it has told them whether they can afford a flat.
+
+A quick comprehension check would answer it. Recruit five people who fit the profile: first-time buyers, or people planning to buy within a few years. Give each a couple of minutes on the page, asking them to use it as they would at the start of a flat search. Then ask one open question: "Based on what you saw, could you afford a 4-room flat in [a town they looked at]?"
+
+If two or more answer as though the page settled that question for them, the costly misreading is real and the rating moves to 3. If they describe the page as showing what flats sell for, the rating stays at 2. Five people give a signal, not a measurement, but that is enough to settle this particular disagreement. It can be run in an afternoon, remotely with an unmoderated testing tool or as a hallway test.
