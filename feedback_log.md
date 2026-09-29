@@ -1,16 +1,10 @@
 # feedback_log.md
+Kartik Surugucchi, Group 6
 
-## Sean Eric Castro So
-Product: https://mgmt6110problemset4.vercel.app/
+| Groupmate (initials) | Their live address | Link to my comment | Posted on | Findings |
+|---|---|---|---|---|
+| SECS | https://mgmt6110problemset4.vercel.app/ | https://mgmt6110problemset4.vercel.app/#comment-6938859424 | Sunday 27 September 2026, 11:33 PM | 4 |
+| KCH | https://problemset3new.vercel.app/ | https://problemset3new.vercel.app/#comment-6938860937 | Sunday 27 September 2026, 11:37 PM | 4 |
+| ST | https://hdbparkinglots.vercel.app/ | https://hdbparkinglots.vercel.app/#comment-6938864612 | Sunday 27 September 2026, 11:49 PM | 4 |
 
-Disqus comment link: http://disq.us/t/5a18dfp
-
-## Kevin Christianto Husein
-Product: https://problemset3new.vercel.app/
-
-Disqus comment link: http://disq.us/t/5a03gs3
-
-## Sanesh Tiwari
-Product: https://hdbparkinglots.vercel.app/
-
-Disqus comment link: http://disq.us/t/59yrrys
+# Original comment links were incorrect and formatting was wrong. Links have been updated and formatting has been fixed.
