@@ -313,3 +313,131 @@ The observation that matters is whether first-time buyers, after using the page,
 A quick comprehension check would answer it. Recruit five people who fit the profile: first-time buyers, or people planning to buy within a few years. Give each a couple of minutes on the page, asking them to use it as they would at the start of a flat search. Then ask one open question: "Based on what you saw, could you afford a 4-room flat in [a town they looked at]?"
 
 If two or more answer as though the page settled that question for them, the costly misreading is real and the rating moves to 3. If they describe the page as showing what flats sell for, the rating stays at 2. Five people give a signal, not a measurement, but that is enough to settle this particular disagreement. It can be run in an afternoon, remotely with an unmoderated testing tool or as a hallway test.
+
+## Blind Arbiter: Transparency of Resale Price Results
+
+### Prompt
+
+ROLE: You are a neutral arbiter between two usability reviewers who rated the same
+problem differently. You do not know which of them built the product. Do not try to
+work it out.
+
+CONTEXT: The product is an AI-augmented web app for first-time HDB buyers who want
+to understand what resale flats are actually selling for in different areas of Singapore.
+
+Both reviewers inspected it against Nielsen's ten usability heuristics and rated the
+problem on this severity scale:
+
+0 I don't agree that this is a usability problem at all.
+1 Cosmetic problem only. Need not be fixed unless extra time is available.
+2 Minor usability problem. Fixing this should be given low priority.
+3 Major usability problem. Important to fix, so should be given high priority.
+4 Usability catastrophe. Imperative to fix before the product can be released.
+
+A rating rests on four factors: how often the problem happens, what it costs when it
+does, whether the person can learn around it, and whether it damages the product's
+standing out of proportion.
+
+REVIEWER A:
+
+Where: https://firsttimehdb.vercel.app/, the resale price cards.
+
+What I did, what I saw: I looked at the median resale price, price range, price per
+square foot, remaining lease, month, and transaction count. The numbers are shown
+clearly, but the page does not explain how the median and other figures are calculated
+or exactly which transactions are included.
+
+Which heuristic: 10, Help and Documentation.
+
+Screen or system: Screen. The calculations already exist in the system, so the page
+only needs a short explanation of what the figures mean.
+
+Severity, and why: 2. The user can still use the site, but these are large financial
+figures and it should be clear what they are based on.
+
+The repair: Add a short explanation or tooltip saying how the median, range, price per
+square foot, remaining lease, and transaction count are calculated.
+
+
+REVIEWER B:
+
+Where: https://firsttimehdb.vercel.app/, main screen, resale price result.
+
+What I did, what I saw: The product showed a resale price result based on the selected
+town and flat type, but I could not see the individual HDB transactions that were used
+to produce that result.
+
+Which heuristic: 2, Match Between the System and the Real World.
+
+Screen or system: System. The individual transaction records would need to be made
+available to the page before the user could inspect them.
+
+Severity, and why: 3. Two flats in the same area and flat type can have very different
+resale prices because of factors such as floor level, remaining lease, size and location.
+Showing only the summary means the result should mainly be treated as a rough estimate.
+
+The repair: Allow users to view the individual transactions behind the result, including
+information such as block, floor range, resale price, remaining lease and transaction date.
+
+
+EVIDENCE NEITHER REVIEWER CONTROLS:
+
+- Reviewers who raised this problem independently, counting A and B: 2 out of 4.
+- Severities that reviewers other than A and B gave this problem: NONE.
+
+GOAL: Judge the evidence, not the reviewers.
+
+1. Say whether A and B describe the same problem. If they do not, say so and stop.
+2. For each of the four factors, say what the evidence shows and what it cannot show.
+3. Give the severity the evidence supports, and name the factor that decided it.
+4. Name the one observation that would change your rating, and say how it could be
+   collected quickly.
+
+GUARDRAILS: Do not split the difference between A and B unless the evidence puts the
+rating there. If the evidence is too thin to decide, say so plainly instead of
+inventing a reason. Do not ask which reviewer built the product.
+
+### Claude Response
+
+### 1. Do A and B describe the same problem?
+
+Yes. Both describe one underlying problem: **the user cannot see what the summary figures rest on.**
+
+A frames it as missing definitions ("how the median… is calculated or exactly which transactions are included"). B frames it as missing records ("I could not see the individual HDB transactions"). A's phrase "which transactions are included" is where the two overlap. They differ in how much of the basis they think the user needs, and that is a disagreement about the repair and the cost, not about what is wrong.
+
+The different heuristic labels (10 and 2) do not make them different problems. The heuristic is a classification choice and does not bear on severity. Neither does the scope of the repair: A's point that the fix is cheap does not lower the severity, and B's point that it needs system work does not raise it. Severity rates the problem, not the fix.
+
+### 2. The four factors
+
+**Frequency.** The evidence shows the gap is structural. It appears on every result view, for every town and flat type, and two of four reviewers found it independently. It cannot show how often real users notice the gap or need the basis while doing their task. Every user is exposed to it, but it is unknown how often it actually gets in anyone's way.
+
+**Cost when it happens.** This is where A and B disagree, and neither side has observed anything. B's argument is sound in principle: flats of the same town and type vary by floor, lease, and size, so a median is a rough guide. But A's own observation cuts against B's mechanism. The cards already show a price range, price per square foot, remaining lease, and transaction count, and the headline figure is labelled a median. So the page does signal that this is an aggregate with spread and a known sample size. The evidence cannot show whether first-time buyers read those signals, or whether they treat the median as the likely price of a particular flat and budget or bid on it.
+
+**Whether users can learn around it.** Neither reviewer addresses this. Repeated use of the product will not dissolve the gap, since the basis stays hidden. However, a user can learn to treat the figure as approximate, and transaction-level data exists outside the product (HDB publishes resale transactions). The evidence cannot show whether first-time buyers know that source or would think to use it.
+
+**Disproportionate damage to standing.** The case for this is plausible. It is a financial product, and an AI-augmented one, where unexplained numbers may invite suspicion that they are generated rather than computed. But neither reviewer reports that any figure is wrong or that any user distrusted it. A states the calculations exist in the system, which suggests they are deterministic. There is no evidence on this factor either way.
+
+### 3. Severity the evidence supports: 2
+
+**The deciding factor is cost.**
+
+- **0 and 1 are ruled out.** Both reviewers agree the problem is real, it was found twice independently, and the figures inform a large financial decision, so it is more than cosmetic.
+- **4 is ruled out.** No one reports that the task cannot be completed or that the figures are wrong.
+
+Between 2 and 3, frequency is high but pushes equally under either rating. The rating turns on cost. A 3 requires a user to misread the summary in a way that leads to a costly decision. That cost is argued, not observed, and the range and transaction count already on the card partly counter it. This does not split the difference; it is A's rating, reached because B's higher rating depends on a claim the evidence does not yet support.
+
+The rating is provisional. The evidence on cost is thin, and thin evidence here points to the lower rating only because the higher one needs a positive showing that is missing.
+
+### 4. The observation that would change the rating
+
+The question is **whether first-time buyers take the median as the price of the specific flat they are considering.**
+
+A quick way to answer it is a five-person think-aloud test, done remotely in a day at about 20 minutes each:
+
+1. Give each participant a concrete scenario, such as a 4-room flat in a named town, high floor, about 70 years of lease left, and ask what they would expect to pay using the site.
+2. Afterwards, ask what the median means and what it is based on.
+3. Note whether they anchor on the median, whether they use the range and transaction count, and whether they look for the underlying transactions.
+
+If three or more of the five treat the median as their flat's price without adjusting for floor or lease, the cost is established and the rating should move to 3. If most use the range and describe the figure as an area-level guide, 2 stands.
+
+Asking the two other reviewers for their severities would be even faster and is standard practice. It would add opinions, though, not evidence on cost, so it would not settle the deciding factor.
